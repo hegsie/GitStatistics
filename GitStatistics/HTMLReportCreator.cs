@@ -425,8 +425,8 @@ namespace GitStatistics
                 "<table class=\"sortable\" id=\"ext\"><tr><th>Extension</th><th>Files (%)</th><th>Lines (%)</th><th>Lines/file</th></tr>");
             foreach (var ext in data.Extensions.Keys.OrderBy(p10 => p10).ToList())
             {
-                var files = data.Extensions[ext]["files"];
-                var lines = data.Extensions[ext]["lines"];
+                var files = data.Extensions[ext].Files;
+                var lines = data.Extensions[ext].Lines;
                 f.Write("<tr><td>{0}</td><td>{1} ({2}%%)</td><td>{3} ({4}%%)</td><td>{5}</td></tr>", ext, files,
                     100.0 * files / data.GetTotalFiles(), lines,
                     100.0 * lines / data.GetTotalLoc(), lines / files);

@@ -70,7 +70,7 @@ namespace GitStatistics
 
         public DictionaryWithDefault<long, object> FilesByStamp { get; set; }
 
-        public DictionaryWithDefault<string, DictionaryWithDefault<string, int>> Extensions { get; set; }
+        public DictionaryWithDefault<string, Extension> Extensions { get; set; }
 
         public DictionaryWithDefault<DateTime, Change> ChangesByDate { get; set; }
 
@@ -346,11 +346,11 @@ namespace GitStatistics
         private void GetExtensions()
         {
             // extensions
-            Extensions = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
+            Extensions = new DictionaryWithDefault<string, Extension>();
             var lines = GitStats.GetPipeOutput(new[]
             {
                 "git ls-tree -r -z HEAD"
-            }).Split("\000").ToList();
+            }).Split("\0").ToList().Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
             ;
             TotalFiles = lines.Count();
             foreach (var line in lines)
@@ -367,21 +367,11 @@ namespace GitStatistics
                     ext = filename.Substring(filename.IndexOf(".", StringComparison.Ordinal) + 1);
                 if (ext.Length > (int) GitStats.Conf["max_ext_length"]) ext = "";
                 if (!Extensions.ContainsKey(ext))
-                    Extensions[ext] = new DictionaryWithDefault<string, int>
-                    {
-                        {
-                            "files",
-                            0
-                        },
-                        {
-                            "lines",
-                            0
-                        }
-                    };
-                Extensions[ext]["files"] += 1;
+                    Extensions[ext] = new Extension();
+                Extensions[ext].Files += 1;
                 try
                 {
-                    Extensions[ext]["lines"] += GetLinesInBlob(sha1);
+                    Extensions[ext].Lines += GetLinesInBlob(sha1);
                 }
                 catch
                 {
