@@ -9,6 +9,37 @@ namespace GitStatistics
 {
     public class GitDataCollector : DataCollector
     {
+        private readonly CultureInfo _cultureInfo;
+        private readonly Calendar _calendar;
+
+        public GitDataCollector()
+        {
+            // Gets the Calendar instance associated with a CultureInfo.
+            _cultureInfo = new CultureInfo("en-US");
+            _calendar = _cultureInfo.Calendar;
+
+            ActivityByHourOfDay = new DictionaryWithDefault<int, int>();
+            ActivityByDayOfWeek = new DictionaryWithDefault<int, int>();
+            ActivityByMonthOfYear = new DictionaryWithDefault<int, int>();
+            ActivityByHourOfWeek = new DictionaryWithDefault<int, DictionaryWithDefault<int, int>>();
+            ActivityByHourOfDayBusiest = 0;
+            ActivityByHourOfWeekBusiest = 0;
+            ActivityByYearWeek = new DictionaryWithDefault<string, int>();
+            ActivityByYearWeekPeak = 0;
+            Authors = new DictionaryWithDefault<string, Author>();
+            Domains = new DictionaryWithDefault<string, Domain>();
+            AuthorOfMonth = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
+            AuthorOfYear = new DictionaryWithDefault<int, DictionaryWithDefault<string, int>>();
+            CommitsByMonth = new DictionaryWithDefault<string, int>();
+            CommitsByYear = new DictionaryWithDefault<int, int>();
+            ActiveDays = new List<DateTime>();
+            TotalLines = 0;
+            TotalLinesAdded = 0;
+            TotalLinesRemoved = 0;
+            CommitsByTimezone = new DictionaryWithDefault<string, int>();
+            Tags = new DictionaryWithDefault<string, Tag>();
+        }
+
         public DictionaryWithDefault<string, Tag> Tags { get; set; }
 
         public DictionaryWithDefault<string, Domain> Domains { get; set; }
@@ -72,12 +103,21 @@ namespace GitStatistics
             Dir = directory;
             ProjectName = Path.GetFileName(directory); 
 
-            string ext;
-            string author;
-            DateTime stamp;
-            string[] parts;
-            string output;
+            GetTotalAuthors();
 
+            GetTagData();
+
+            var lines = GetActivityDataAndAuthors();
+
+            GetFilesByStampAndTotalCommits(lines);
+
+            GetExtensions();
+
+            GetChangesByDateAndTotalLines();
+        }
+
+        private void GetTotalAuthors()
+        {
             try
             {
                 TotalAuthors = Convert.ToInt32(GitStats.GetPipeOutput(new[]
@@ -86,36 +126,17 @@ namespace GitStatistics
                     "wc -l"
                 }));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 TotalAuthors = 0;
             }
+        }
 
+        private void GetTagData()
+        {
+            string[] parts;
+            string output;
 
-            // Gets the Calendar instance associated with a CultureInfo.
-            CultureInfo cultureInfo = new CultureInfo("en-US");
-            Calendar calendar = cultureInfo.Calendar;
-
-            ActivityByHourOfDay = new DictionaryWithDefault<int, int>();
-            ActivityByDayOfWeek = new DictionaryWithDefault<int, int>();
-            ActivityByMonthOfYear = new DictionaryWithDefault<int, int>();
-            ActivityByHourOfWeek = new DictionaryWithDefault<int, DictionaryWithDefault<int, int>>();
-            ActivityByHourOfDayBusiest = 0;
-            ActivityByHourOfWeekBusiest = 0;
-            ActivityByYearWeek = new DictionaryWithDefault<string, int>();
-            ActivityByYearWeekPeak = 0;
-            Authors = new DictionaryWithDefault<string, Author>();
-            Domains = new DictionaryWithDefault<string, Domain>();
-            AuthorOfMonth = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
-            AuthorOfYear = new DictionaryWithDefault<int, DictionaryWithDefault<string, int>>();
-            CommitsByMonth = new DictionaryWithDefault<string, int>();
-            CommitsByYear = new DictionaryWithDefault<int, int>();
-            ActiveDays = new List<DateTime>();
-            TotalLines = 0;
-            TotalLinesAdded = 0;
-            TotalLinesRemoved = 0;
-            CommitsByTimezone = new DictionaryWithDefault<string, int>();
-            Tags = new DictionaryWithDefault<string, Tag>();
             var lines = GitStats.GetPipeOutput(new[]
             {
                 "git show-ref --tags"
@@ -135,6 +156,7 @@ namespace GitStatistics
                 if (output.Length > 0)
                 {
                     parts = output.Split(" ");
+                    DateTime stamp;
                     try
                     {
                         stamp = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(parts[0])).DateTime;
@@ -166,23 +188,27 @@ namespace GitStatistics
                 {
                     parts = Regex.Split(line, "\\s+", RegexOptions.None);
                     var commits = Convert.ToInt32(parts[1]);
-                    author = parts[2];
+                    var author = parts[2];
                     Tags[tag].Commits += commits;
                     Tags[tag].Authors[author] = commits;
                 }
             }
+        }
 
-            // Collect revision statistics
-            // Outputs "<stamp> <date> <time> <timezone> <author> '<' <mail> '>'"
-            lines = GitStats.GetPipeOutput(new[]
+        // Collect revision statistics
+        // Outputs "<stamp> <date> <time> <timezone> <author> '<' <mail> '>'"
+        private List<string> GetActivityDataAndAuthors()
+        {
+            var lines = GitStats.GetPipeOutput(new[]
             {
                 "git rev-list --pretty=format:\"%at %ai %an <%aE>\" HEAD",
                 "grep -v ^commit"
             }).Split("\n").ToList();
             foreach (var line in lines)
             {
-                parts = Regex.Split(line, "([01-9-:+]+ )").Where(x => !string.IsNullOrEmpty(x)).Select(s => s.Trim())
+                var parts = Regex.Split(line, "([01-9-:+]+ )").Where(x => !string.IsNullOrEmpty(x)).Select(s => s.Trim())
                     .ToArray();
+                DateTime stamp;
                 try
                 {
                     stamp = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(parts[0])).DateTime;
@@ -194,7 +220,7 @@ namespace GitStatistics
 
                 var timezone = parts[3];
                 var tup1 = parts[4].Split("<");
-                author = tup1[0];
+                var author = tup1[0];
                 var mail = tup1[1];
                 author = author.TrimEnd();
                 mail = mail.TrimEnd('>');
@@ -219,7 +245,7 @@ namespace GitStatistics
                 // commits
                 Domains[domain].Commits = Domains[domain].Commits + 1;
                 // hour of week
-                if (!ActivityByHourOfWeek.ContainsKey(day)) 
+                if (!ActivityByHourOfWeek.ContainsKey(day))
                     ActivityByHourOfWeek[day] = new DictionaryWithDefault<int, int>();
 
                 ActivityByHourOfWeek[day][hour] = ActivityByHourOfWeek[day][hour] + 1;
@@ -231,7 +257,7 @@ namespace GitStatistics
                 ActivityByMonthOfYear[month] = ActivityByMonthOfYear[month] + 1;
                 // yearly/weekly activity
                 var yyw =
-                    $"{date.Year}-{calendar.GetWeekOfYear(date, cultureInfo.DateTimeFormat.CalendarWeekRule, cultureInfo.DateTimeFormat.FirstDayOfWeek)}";
+                    $"{date.Year}-{_calendar.GetWeekOfYear(date, _cultureInfo.DateTimeFormat.CalendarWeekRule, _cultureInfo.DateTimeFormat.FirstDayOfWeek)}";
                 ActivityByYearWeek[yyw] = ActivityByYearWeek[yyw] + 1;
                 if (ActivityByYearWeekPeak < ActivityByYearWeek[yyw]) ActivityByYearWeekPeak = ActivityByYearWeek[yyw];
                 // author stats
@@ -278,8 +304,14 @@ namespace GitStatistics
                 CommitsByTimezone[timezone] = CommitsByTimezone[timezone] + 1;
             }
 
+            return lines;
+        }
+
+        private void GetFilesByStampAndTotalCommits(List<string> lines)
+        {
             // TODO Optimize this, it's the worst bottleneck
             // outputs "<stamp> <files>" for each revision
+            lines.Clear();
             FilesByStamp = new DictionaryWithDefault<long, object>();
             var revLines = GitStats.GetPipeOutput(new[]
             {
@@ -298,7 +330,7 @@ namespace GitStatistics
             TotalCommits = lines.Count;
             foreach (var line in lines)
             {
-                parts = line.Split(" ");
+                var parts = line.Split(" ");
                 if (parts.Length != 2) continue;
                 try
                 {
@@ -309,10 +341,13 @@ namespace GitStatistics
                     Console.WriteLine("Warning: failed to parse line \"%s\"", line);
                 }
             }
+        }
 
+        private void GetExtensions()
+        {
             // extensions
             Extensions = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
-            lines = GitStats.GetPipeOutput(new[]
+            var lines = GitStats.GetPipeOutput(new[]
             {
                 "git ls-tree -r -z HEAD"
             }).Split("\000").ToList();
@@ -321,9 +356,10 @@ namespace GitStatistics
             foreach (var line in lines)
             {
                 if (line.Length == 0) continue;
-                parts = Regex.Split(line, "\\s+", RegexOptions.None);
+                var parts = Regex.Split(line, "\\s+", RegexOptions.None);
                 var sha1 = parts[2];
                 var filename = parts[3];
+                string ext;
                 if (filename.IndexOf(".", StringComparison.Ordinal) == -1 ||
                     filename.IndexOf(".", StringComparison.Ordinal) == 0)
                     ext = "";
@@ -352,20 +388,22 @@ namespace GitStatistics
                     Console.WriteLine("Warning: Could not count lines for file \"%s\"", line);
                 }
             }
+        }
 
+        private void GetChangesByDateAndTotalLines()
+        {
             // line statistics
             // outputs:
             //  N files changed, N insertions (+), N deletions(-)
             // <stamp> <author>
             ChangesByDate = new DictionaryWithDefault<DateTime, Change>();
-            lines = GitStats.GetPipeOutput(new[] {"git log --shortstat --pretty=format:\"%at %an\""}).Split("\n")
+            var lines = GitStats.GetPipeOutput(new[] {"git log --shortstat --pretty=format:\"%at %an\""}).Split("\n")
                 .ToList();
             lines.Reverse();
             var files = 0;
             var inserted = 0;
             var deleted = 0;
             var totalLines = 0;
-            author = null;
             foreach (var line in lines)
             {
                 if (line.Length == 0) continue;
@@ -377,7 +415,7 @@ namespace GitStatistics
                         try
                         {
                             var datetime = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(line[0])).DateTime;
-                            author = line.Substring(pos + 1);
+                            var author = line.Substring(pos + 1);
                             ChangesByDate[datetime] = new Change
                             {
                                 Files = files,
@@ -539,11 +577,6 @@ namespace GitStatistics
             }
 
             return res;
-        }
-
-        public object GetTotalAuthors()
-        {
-            return TotalAuthors;
         }
 
         public int GetTotalCommits()

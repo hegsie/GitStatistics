@@ -35,7 +35,7 @@ namespace GitStatistics
         public static object GnuplotCommon =
             $"set terminal {ImageType} {GnuplotImageSpecifications[ImageType]}\nset size 1.0,0.5\n";
 
-        private string title;
+        private string _title;
 
         private readonly int version = 1;
 
@@ -59,7 +59,7 @@ namespace GitStatistics
             Data = data;
             Path = path;
 
-            title = data.ProjectName;
+            _title = data.ProjectName;
             // copy static files. Looks in the binary directory, ../share/gitstats and /usr/share/gitstats
             var binaryPath = Directory.GetCurrentDirectory();
             var secondaryPath = System.IO.Path.Join(binaryPath, "..", "share", "gitstats");
@@ -84,7 +84,7 @@ namespace GitStatistics
             var f = new StreamWriter(path + "\\index.html");
             var format = "yyyy-MM-dd H:mm:ss";
             PrintHeader(f);
-            f.Write($"<h1>GitStats - {data.ProjectName}</h1>");
+            f.Write($"<h1>GitStatistics - {data.ProjectName}</h1>");
             PrintNav(f);
             f.Write("<dl>");
             f.Write($"<dt>Project name</dt><dd>{data.ProjectName}</dd>");
@@ -92,7 +92,7 @@ namespace GitStatistics
             f.Write(
                 $"<dt>Generated</dt><dd>{DateTime.Now.ToString(format)} (in {runTime.Seconds:f2} seconds)</dd>");
             f.Write(
-                "<dt>Generator</dt><dd><a href=\"http://gitstats.sourceforge.net/\">GitStats</a> (version {0})</dd>",
+                "<dt>Generator</dt><dd><a href=\"https://github.com/hegsie/GitStatistics\">GitStatistics</a> (version {0})</dd>",
                 version);
             f.Write($"<dt>Report Period</dt><dd>{data.GetFirstCommitDate().ToString(format)} to {data.GetLastCommitDate().ToString(format)}</dd>");
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
@@ -103,7 +103,7 @@ namespace GitStatistics
             f.Write("<dt>Total Commits</dt><dd>{0} (average {1:F1} commits per active day, {2:F1} per all days)</dd>",
                 data.GetTotalCommits(), data.GetTotalCommits() / data.GetActiveDays().Count,
                 data.GetTotalCommits() / data.GetCommitDeltaDays());
-            f.Write($"<dt>Authors</dt><dd>{data.GetTotalAuthors()}</dd>");
+            f.Write($"<dt>Authors</dt><dd>{data.TotalAuthors}</dd>");
             f.Write("</dl>");
             f.Write("</body>\n</html>");
             f.Close();
@@ -619,9 +619,9 @@ plot 'lines_of_code.dat' using 1:2 w lines
                                     <!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"">
                                     <html xmlns=""http://www.w3.org/1999/xhtml"">
                                     <head>
-	                                    <title>GitStats - {this.title}</title>
+	                                    <title>GitStats - {this._title}</title>
 	                                    <link rel=""stylesheet"" href=""{GitStats.Conf["style"]}"" type=""text/css"" />
-	                                    <meta name=""generator"" content=""GitStats {version}"" />
+	                                    <meta name=""generator"" content=""GitStatistics {version}"" />
 	                                    <script type=""text/javascript"" src=""sortable.js""></script>
                                     </head>
                                     <body>
