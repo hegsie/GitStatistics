@@ -61,7 +61,7 @@ namespace GitStatistics
 
             title = data.ProjectName;
             // copy static files. Looks in the binary directory, ../share/gitstats and /usr/share/gitstats
-            var binaryPath = Assembly.GetEntryAssembly()?.Location;
+            var binaryPath = Directory.GetCurrentDirectory();
             var secondaryPath = System.IO.Path.Join(binaryPath, "..", "share", "gitstats");
             var baseDirs = new List<object>
             {
@@ -73,16 +73,16 @@ namespace GitStatistics
                 {"gitstats.css", "sortable.js", "arrow-up.gif", "arrow-down.gif", "arrow-none.gif"})
             foreach (var @base in baseDirs)
             {
-                var src = @base + "/" + file;
+                var src = @base + "\\" + file;
                 if (File.Exists(src))
                 {
-                    File.Copy(src, path + "/" + file);
+                    File.Copy(src, path + "\\" + file, true);
                     break;
                 }
             }
 
-            var f = new StreamWriter(path + "/index.html");
-            var format = "YYYY-MM-dd H:mm:ss";
+            var f = new StreamWriter(path + "\\index.html");
+            var format = "yyyy-MM-dd H:mm:ss";
             PrintHeader(f);
             f.Write($"<h1>GitStats - {data.ProjectName}</h1>");
             PrintNav(f);
@@ -109,7 +109,7 @@ namespace GitStatistics
             f.Close();
             //##
             // Activity
-            f = new StreamWriter(path + "/activity.html");
+            f = new StreamWriter(path + "\\activity.html");
             PrintHeader(f);
             f.Write("<h1>Activity</h1>");
             PrintNav(f);
@@ -126,7 +126,7 @@ namespace GitStatistics
 
             foreach (var i in Enumerable.Range(0, weeks - 0))
             {
-                weeksList.Insert(0, stampCur.ToString("%Y-%W"));
+                weeksList.Insert(0, stampCur.ToString("yyyy-%W"));
                 stampCur = DateTime.Now.AddDays(-7);
             }
 
@@ -155,7 +155,7 @@ namespace GitStatistics
             f.Write("<table><tr><th>Hour</th>");
             foreach (var i in Enumerable.Range(0, 24 - 0)) f.Write("<th>{0}</th>", i);
             f.Write("</tr>\n<tr><th>Commits</th>");
-            var fp = new StreamWriter(path + "/hour_of_day.dat");
+            var fp = new StreamWriter(path + "\\hour_of_day.dat");
             foreach (var i in Enumerable.Range(0, 24 - 0))
                 if (hourOfDay.ContainsKey(i))
                 {
@@ -171,13 +171,13 @@ namespace GitStatistics
 
             fp.Close();
             f.Write("</tr>\n<tr><th>%</th>");
-            var totalcommits = data.GetTotalCommits();
+            var totalCommits = data.GetTotalCommits();
             foreach (var i in Enumerable.Range(0, 24 - 0))
                 if (hourOfDay.ContainsKey(i))
                 {
                     r = 127 + Convert.ToInt32(hourOfDay[i] / data.ActivityByHourOfDayBusiest * 128);
                     f.Write("<td style=\"background-color: rgb({0}, 0, 0)\">{1}</td>", r,
-                        100.0 * hourOfDay[i] / totalcommits);
+                        100.0 * hourOfDay[i] / totalCommits);
                 }
                 else
                 {
@@ -186,7 +186,7 @@ namespace GitStatistics
 
             f.Write("</tr></table>");
             f.Write($"<img src=\"hour_of_day.{ImageType}\" alt=\"Hour of Day\" />");
-            var fg = new StreamWriter(path + "/hour_of_day.dat");
+            var fg = new StreamWriter(path + "\\hour_of_day.dat");
             foreach (var i in Enumerable.Range(0, 24 - 0))
                 fg.Write(hourOfDay.ContainsKey(i) ? $"{i + 1} {hourOfDay[i]}\n" : $"{i + 1} 0\n");
             fg.Close();
@@ -195,7 +195,7 @@ namespace GitStatistics
             var dayOfWeek = data.GetActivityByDayOfWeek();
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Day</th><th>Total (%)</th></tr>");
-            fp = new StreamWriter(path + "/day_of_week.dat");
+            fp = new StreamWriter(path + "\\day_of_week.dat");
             foreach (var d in Enumerable.Range(0, 7 - 0))
             {
                 commits = 0;
@@ -204,7 +204,7 @@ namespace GitStatistics
                 f.Write("<tr>");
                 f.Write("<th>{0}</th>", d + 1);
                 if (dayOfWeek.ContainsKey(d))
-                    f.Write("<td>{0} ({1}%%)</td>", dayOfWeek[d], 100.0 * dayOfWeek[d] / totalcommits);
+                    f.Write("<td>{0} ({1}%%)</td>", dayOfWeek[d], 100.0 * dayOfWeek[d] / totalCommits);
                 else
                     f.Write("<td>0</td>");
                 f.Write("</tr>");
@@ -250,7 +250,7 @@ namespace GitStatistics
             f.Write(html_header(2, "Month of Year"));
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Month</th><th>Commits (%)</th></tr>");
-            fp = new StreamWriter(path + "/month_of_year.dat");
+            fp = new StreamWriter(path + "\\month_of_year.dat");
             foreach (var mm in Enumerable.Range(1, 13 - 1))
             {
                 commits = 0;
@@ -270,7 +270,7 @@ namespace GitStatistics
                 f.Write("<tr><td>{0}</td><td>{1}</td></tr>", yymm, data.CommitsByMonth[yymm]);
             f.Write("</table></div>");
             f.Write($"<img src=\"commits_by_year_month.{ImageType}\" alt=\"Commits by year/month\" />");
-            fg = new StreamWriter(path + "/commits_by_year_month.dat");
+            fg = new StreamWriter(path + "\\commits_by_year_month.dat");
             foreach (var yymm in data.CommitsByMonth.Keys.OrderBy(p2 => p2).ToList())
                 fg.Write("{0} {1}s\n", yymm, data.CommitsByMonth[yymm]);
             fg.Close();
@@ -282,7 +282,7 @@ namespace GitStatistics
                     100.0 * data.CommitsByYear[yy] / data.GetTotalCommits());
             f.Write("</table></div>");
             f.Write($"<img src=\"commits_by_year.{ImageType}\" alt=\"Commits by Year\" />");
-            fg = new StreamWriter(path + "/commits_by_year.dat");
+            fg = new StreamWriter(path + "\\commits_by_year.dat");
             foreach (var yy in data.CommitsByYear.Keys.OrderBy(p4 => p4).ToList())
                 fg.Write($"{yy} {data.CommitsByYear[yy]}\n");
             fg.Close();
@@ -303,7 +303,7 @@ namespace GitStatistics
             f.Close();
             //##
             // Authors
-            f = new StreamWriter(path + "/authors.html");
+            f = new StreamWriter(path + "\\authors.html");
             PrintHeader(f);
             f.Write("<h1>Authors</h1>");
             PrintNav(f);
@@ -327,7 +327,7 @@ namespace GitStatistics
             if (allAuthors.Count() > (int) GitStats.Conf["max_authors"])
             {
                 var rest = allAuthors.Take((int) GitStats.Conf["max_authors"]);
-                f.Write("<p class=\"moreauthors\">These didn\'t make it to the top: %s</p>", string.Join(", ", rest));
+                f.Write("<p class=\"moreauthors\">These didn\'t make it to the top: {0}</p>", string.Join(", ", rest));
             }
 
             // Authors :: Author of Month
@@ -372,7 +372,7 @@ namespace GitStatistics
             domainsByCommits.Reverse();
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Domains</th><th>Total (%)</th></tr>");
-            fp = new StreamWriter(path + "/domains.dat");
+            fp = new StreamWriter(path + "\\domains.dat");
             var n = 0;
             foreach (var domain in domainsByCommits)
             {
@@ -382,7 +382,7 @@ namespace GitStatistics
                 var info = data.GetDomainInfo(domain);
                 fp.Write("{0} {1} {2}\n", domain, n, info.Commits);
                 f.Write("<tr><th>{0}</th><td>{1} ({2}%%)</td></tr>", domain, info.Commits,
-                    100.0 * info.Commits / totalcommits);
+                    100.0 * info.Commits / totalCommits);
             }
 
             f.Write("</table></div>");
@@ -392,7 +392,7 @@ namespace GitStatistics
             f.Close();
             //##
             // Files
-            f = new StreamWriter(path + "/files.html");
+            f = new StreamWriter(path + "\\files.html");
             PrintHeader(f);
             f.Write("<h1>Files</h1>");
             PrintNav(f);
@@ -408,7 +408,7 @@ namespace GitStatistics
             foreach (var stamp in data.FilesByStamp.Keys.OrderBy(p8 => p8).ToList())
                 filesByDate.Add(
                     $"{DateTimeOffset.FromUnixTimeSeconds(stamp).DateTime:YY-MM-dd} {data.FilesByStamp[stamp]}");
-            fg = new StreamWriter(path + "/files_by_date.dat");
+            fg = new StreamWriter(path + "\\files_by_date.dat");
             foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList()) fg.Write($"{line}\n");
             //for stamp in sorted(Data.files_by_stamp.keys()):
             //	fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), Data.files_by_stamp[stamp]))
@@ -433,7 +433,7 @@ namespace GitStatistics
             f.Close();
             //##
             // Lines
-            f = new StreamWriter(path + "/lines.html");
+            f = new StreamWriter(path + "\\lines.html");
             PrintHeader(f);
             f.Write("<h1>Lines</h1>");
             PrintNav(f);
@@ -442,7 +442,7 @@ namespace GitStatistics
             f.Write("</dl>\n");
             f.Write(html_header(2, "Lines of Code"));
             f.Write($"<img src=\"lines_of_code.{ImageType}\" />");
-            fg = new StreamWriter(path + "/lines_of_code.dat");
+            fg = new StreamWriter(path + "\\lines_of_code.dat");
             foreach (var stamp in data.ChangesByDate.Keys.OrderBy(p11 => p11).ToList())
                 fg.Write($"{stamp} {data.ChangesByDate[stamp].TotalLines}\n");
             fg.Close();
@@ -450,7 +450,7 @@ namespace GitStatistics
             f.Close();
             //##
             // tags.html
-            f = new StreamWriter(path + "/tags.html");
+            f = new StreamWriter(path + "\\tags.html");
             PrintHeader(f);
             f.Write("<h1>Tags</h1>");
             PrintNav(f);
@@ -487,7 +487,7 @@ namespace GitStatistics
         {
             Console.WriteLine("Generating graphs...");
             // hour of day
-            var f = new StreamWriter(path + "/hour_of_day.plot");
+            var f = new StreamWriter(path + "\\hour_of_day.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'hour_of_day.{ImageType}'
@@ -500,7 +500,7 @@ plot 'hour_of_day.dat' using 1:2:(0.5) w boxes fs solid
 ");
             f.Close();
             // day of week
-            f = new StreamWriter(path + "/day_of_week.plot");
+            f = new StreamWriter(path + "\\day_of_week.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'day_of_week.{ImageType}'
@@ -513,7 +513,7 @@ plot 'day_of_week.dat' using 1:2:(0.5) w boxes fs solid
 ");
             f.Close();
             // Domains
-            f = new StreamWriter(path + "/domains.plot");
+            f = new StreamWriter(path + "\\domains.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'domains.{ImageType}'
@@ -525,7 +525,7 @@ plot 'domains.dat' using 2:3:(0.5) with boxes fs solid, '' using 2:3:1 with labe
 ");
             f.Close();
             // Month of Year
-            f = new StreamWriter(path + "/month_of_year.plot");
+            f = new StreamWriter(path + "\\month_of_year.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'month_of_year.{ImageType}'
@@ -538,7 +538,7 @@ plot 'month_of_year.dat' using 1:2:(0.5) w boxes fs solid
 ");
             f.Close();
             // commits_by_year_month
-            f = new StreamWriter(path + "/commits_by_year_month.plot");
+            f = new StreamWriter(path + "\\commits_by_year_month.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'commits_by_year_month.{ImageType}'
@@ -554,7 +554,7 @@ plot 'commits_by_year_month.dat' using 1:2:(0.5) w boxes fs solid
 ");
             f.Close();
             // commits_by_year
-            f = new StreamWriter(path + "/commits_by_year.plot");
+            f = new StreamWriter(path + "\\commits_by_year.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'commits_by_year.{ImageType}'
@@ -567,7 +567,7 @@ plot 'commits_by_year.dat' using 1:2:(0.5) w boxes fs solid
 ");
             f.Close();
             // Files by date
-            f = new StreamWriter(path + "/files_by_date.plot");
+            f = new StreamWriter(path + "\\files_by_date.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'files_by_date.{ImageType}'
@@ -584,7 +584,7 @@ plot 'files_by_date.dat' using 1:2 w steps
 ");
             f.Close();
             // Lines of Code
-            f = new StreamWriter(path + "/lines_of_code.plot");
+            f = new StreamWriter(path + "\\lines_of_code.plot");
             f.Write(GnuplotCommon);
             f.Write($@"
 set output 'lines_of_code.{ImageType}'
@@ -600,12 +600,12 @@ plot 'lines_of_code.dat' using 1:2 w lines
 ");
             f.Close();
             Directory.SetCurrentDirectory(path);
-            var matchingFiles = Glob.Files(path, "/*.plot").ToArray();
+            var matchingFiles = Glob.Files(path, "*.plot").ToArray();
             foreach (var file in matchingFiles)
             {
                 var output = GitStats.GetPipeOutput(new[]
                 {
-                    Program.GnuPlotCmd + string.Format(" \"%s\"", f)
+                    Program.GnuPlotCmd + $" \"{file}\""
                 });
                 if (output.Length > 0) Console.WriteLine(output);
             }
