@@ -369,12 +369,13 @@ namespace GitStatistics
                 commits = data.AuthorOfYear[yy][authors[0]];
                 // next = ", ".join(authors[1::5]);
                 next = string.Join(", ", authors.ToList().GetNth(5));
-                f.Write("<tr><td>%s</td><td>%s</td><td>%d (%.2f%% of %d)</td><td>%s</td></tr>", yy, authors[0], commits, 100.0 * commits / data.CommitsByYear[yy], data.CommitsByYear[yy], next);
+                f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3}%% of {4})</td><td>{5}</td></tr>", yy, authors[0], commits, 100.0 * commits / data.CommitsByYear[yy], data.CommitsByYear[yy], next);
             }
             f.Write("</table>");
             // Domains
             f.Write(html_header(2, "Commits by Domains"));
-            var domainsByCommits = DataCollector.GetKeysSortedByValueKey(data.Domains, "commits");
+            var domainsByCommits = data.Domains.Keys.Select(outerKey => (data.Domains[outerKey].Commits, outerKey))
+                .OrderBy(p1 => p1).Select(tuple => tuple.outerKey);
             domainsByCommits.Reverse();
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Domains</th><th>Total (%)</th></tr>");
@@ -389,8 +390,8 @@ namespace GitStatistics
                 commits = 0;
                 n += 1;
                 var info = data.GetDomainInfo(domain);
-                fp.Write("%s %d %d\n", domain, n, info["commits"]);
-                f.Write("<tr><th>%s</th><td>%d (%.2f%%)</td></tr>", domain, info["commits"], 100.0 * info["commits"] / totalcommits);
+                fp.Write("{0} {1} {2}\n", domain, n, info.Commits);
+                f.Write("<tr><th>{0}</th><td>{1} ({2}%%)</td></tr>", domain, info.Commits, 100.0 * info.Commits / totalcommits);
             }
             f.Write("</table></div>");
             f.Write($"<img src=\"domains.{ImageType}\" alt=\"Commits by Domains\" />");
@@ -434,7 +435,7 @@ namespace GitStatistics
             {
                 var files = data.Extensions[ext]["files"];
                 var lines = data.Extensions[ext]["lines"];
-                f.Write("<tr><td>%s</td><td>%d (%.2f%%)</td><td>%d (%.2f%%)</td><td>%d</td></tr>", ext, files,
+                f.Write("<tr><td>{0}</td><td>{1} ({2}%%)</td><td>{3} ({4}%%)</td><td>{5}</td></tr>", ext, files,
                     100.0 * files / data.GetTotalFiles(), lines,
                     100.0 * lines / data.GetTotalLoc(), lines / files);
             }
@@ -448,7 +449,7 @@ namespace GitStatistics
             f.Write("<h1>Lines</h1>");
             this.PrintNav(f);
             f.Write("<dl>\n");
-            f.Write(string.Format("<dt>Total lines</dt><dd>%d</dd>", data.GetTotalLoc()));
+            f.Write(string.Format("<dt>Total lines</dt><dd>{0}</dd>", data.GetTotalLoc()));
             f.Write("</dl>\n");
             f.Write(html_header(2, "Lines of Code"));
             f.Write($"<img src=\"lines_of_code.{ImageType}\" />");
@@ -470,7 +471,7 @@ namespace GitStatistics
             f.Write(string.Format("<dt>Total tags</dt><dd>%d</dd>", data.Tags.Count));
             if (data.Tags.Count > 0)
             {
-                f.Write("<dt>Average commits per tag</dt><dd>%.2f</dd>", 1.0 * data.GetTotalCommits() / data.Tags.Count);
+                f.Write("<dt>Average commits per tag</dt><dd>{0}</dd>", 1.0 * data.GetTotalCommits() / data.Tags.Count);
             }
             f.Write("</dl>");
             f.Write("<table class=\"tags\">");

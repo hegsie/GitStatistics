@@ -5,7 +5,7 @@ namespace GitStatistics
 {
     public class Tag
     {
-        public long Stamp { get; set; }
+        public DateTime Stamp { get; set; }
 
         public string Hash { get; set; }
 

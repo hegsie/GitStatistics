@@ -53,26 +53,55 @@ namespace GitStatistics
                 Console.Out.Flush();
             }
 
-
             // Start the child process.
-
             StringBuilder sb = new StringBuilder();
-            foreach (var x in cmds)
+            foreach (var cmd in cmds)
             {
-                Process p0 = new Process
+                if (sb.Length > 0)
                 {
-                    StartInfo =
+                    Process p0 = new Process
                     {
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        FileName = "cmd.exe", 
-                        Arguments = "/c " + x
-                    }
-                };
-                p0.Start();
-                sb.Append(p0.StandardOutput.ReadToEnd());
-                p0.WaitForExit();
+                        StartInfo =
+                        {
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardInput = true,
+                            FileName = "cmd.exe",
+                            Arguments = "/c " + cmd
+                        }
+                    };
+
+                    p0.Start();
+
+                    StreamWriter inputStream = p0.StandardInput;
+
+                    inputStream.Write(sb.ToString());
+                    inputStream.Close();
+                    sb.Clear();
+
+                    sb.Append(p0.StandardOutput.ReadToEnd());
+                    p0.WaitForExit();
+                }
+                else
+                {
+                    Process p0 = new Process
+                    {
+                        StartInfo =
+                        {
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            FileName = "cmd.exe",
+                            Arguments = "/c " + cmd
+                        }
+                    };
+
+                    p0.Start();
+
+                    sb.Append(p0.StandardOutput.ReadToEnd());
+                    p0.WaitForExit();
+                }
             }
 
             var end = DateTime.Now;

@@ -107,7 +107,7 @@ namespace GitStatistics
         //    return map(lambda el : el[1], sorted(map(lambda el : (d[el][key], el), d.keys())))
         public static IEnumerable<T1> GetKeysSortedByValueKey<T1, T2, T3>(Dictionary<T1,Dictionary<T2,T3>> dict, T2 key)
         {
-            return dict.Keys.Select(el => (dict[el][key], el)).OrderBy(p1 => p1).Select(tuple => tuple.el);
+            return dict.Keys.Select(outerKey => (dict[outerKey][key], outerKey)).OrderBy(p1 => p1).Select(tuple => tuple.outerKey);
         }
 
         public static IEnumerable<T1> GetKeysSortedByAuthorKey<T1>(Dictionary<T1, Author> dict)
