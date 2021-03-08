@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using GlobExpressions;
 
 namespace GitStatistics
@@ -88,14 +88,14 @@ namespace GitStatistics
             PrintNav(f);
             f.Write("<dl>");
             f.Write($"<dt>Project name</dt><dd>{data.ProjectName}</dd>");
+            var runTime = DateTime.Now - data.GetStampCreated();
             f.Write(
-                $"<dt>Generated</dt><dd>{DateTime.Now.ToString(format)} (in {DateTime.Now - data.GetStampCreated()} seconds)</dd>");
+                $"<dt>Generated</dt><dd>{DateTime.Now.ToString(format)} (in {runTime.Seconds:f2} seconds)</dd>");
             f.Write(
                 "<dt>Generator</dt><dd><a href=\"http://gitstats.sourceforge.net/\">GitStats</a> (version {0})</dd>",
                 version);
-            f.Write("<dt>Report Period</dt><dd>{0} to {1}</dd>", data.GetFirstCommitDate().ToString(format),
-                data.GetLastCommitDate().ToString(format));
-            f.Write("<dt>Age</dt><dd>{0} days, {1} active days {2}</dd>", data.GetCommitDeltaDays(),
+            f.Write($"<dt>Report Period</dt><dd>{data.GetFirstCommitDate().ToString(format)} to {data.GetLastCommitDate().ToString(format)}</dd>");
+            f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
                 data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
             f.Write($"<dt>Total Files</dt><dd>{data.GetTotalFiles()}</dd>");
             f.Write("<dt>Total Lines of Code</dt><dd>{0} ({1} added, {2} removed)</dd>", data.GetTotalLoc(),
@@ -123,11 +123,17 @@ namespace GitStatistics
             var now = DateTime.Now;
             var weeksList = new List<string>();
             var stampCur = now;
+            CultureInfo cultureInfo = new CultureInfo("en-US");
+            Calendar calendar = cultureInfo.Calendar;
 
             foreach (var i in Enumerable.Range(0, weeks - 0))
             {
-                weeksList.Insert(0, stampCur.ToString("yyyy-%W"));
-                stampCur = DateTime.Now.AddDays(-7);
+                var weekOfYear = calendar.GetWeekOfYear(stampCur, cultureInfo.DateTimeFormat.CalendarWeekRule,
+                    cultureInfo.DateTimeFormat.FirstDayOfWeek);
+                weeksList.Insert(0,
+                    stampCur.ToString(
+                        $"yyyy-{weekOfYear}"));
+                stampCur = stampCur.AddDays(-7);
             }
 
             // top row: commits & bar
@@ -342,7 +348,6 @@ namespace GitStatistics
                 authors = authordict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
                 authors = authors.Reverse().ToArray();
                 commits = data.AuthorOfMonth[yymm][authors[0]];
-                // next = ", ".join(authors[1::5]);
                 next = string.Join(", ", authors.ToList().GetNth(5));
                 f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3}%% of {4})</td><td>{5}</td></tr>", yymm, authors[0],
                     commits, 100.0 * commits / data.CommitsByMonth[yymm], data.CommitsByMonth[yymm], next);
@@ -409,13 +414,12 @@ namespace GitStatistics
                 filesByDate.Add(
                     $"{DateTimeOffset.FromUnixTimeSeconds(stamp).DateTime:YY-MM-dd} {data.FilesByStamp[stamp]}");
             fg = new StreamWriter(path + "\\files_by_date.dat");
-            foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList()) fg.Write($"{line}\n");
-            //for stamp in sorted(Data.files_by_stamp.keys()):
-            //	fg.write('%s %d\n' % (datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), Data.files_by_stamp[stamp]))
+            foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList()) 
+                fg.Write($"{line}\n");
+            
             fg.Close();
             f.Write($"<img src=\"files_by_date.{ImageType}\" alt=\"Files by Date\" />");
-            //f.Write('<h2>Average file size by date</h2>')
-            // Files :: Extensions
+            
             f.Write(html_header(2, "Extensions"));
             f.Write(
                 "<table class=\"sortable\" id=\"ext\"><tr><th>Extension</th><th>Files (%)</th><th>Lines (%)</th><th>Lines/file</th></tr>");
@@ -462,8 +466,6 @@ namespace GitStatistics
             f.Write("<table class=\"tags\">");
             f.Write("<tr><th>Name</th><th>Date</th><th>Commits</th><th>Authors</th></tr>");
             // sort the tags by date desc
-            //var tags_sorted_by_date_desc = map(el => el[1], reversed(map(el => (el[1]["date"], el[0]), data.Tags.items()).OrderBy(_p_12 => _p_12).ToList()));
-
             var tagsSortedByDateDesc = data.Tags.Select(el => (el.Value.Date, el.Key)).OrderBy(p12 => p12)
                 .Reverse().Select(el => el.Key);
             foreach (var tag in tagsSortedByDateDesc)
