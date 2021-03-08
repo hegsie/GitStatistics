@@ -1,4 +1,0 @@
-C:\src\git\gitStatsCSharp\gitStatsCSharp\gitStatsCSharp\obj\Debug\netcoreapp3.1\gitStatsCSharp.csprojAssemblyReference.cache
-C:\src\git\gitStatsCSharp\gitStatsCSharp\gitStatsCSharp\obj\Debug\netcoreapp3.1\gitStatsCSharp.AssemblyInfoInputs.cache
-C:\src\git\gitStatsCSharp\gitStatsCSharp\gitStatsCSharp\obj\Debug\netcoreapp3.1\gitStatsCSharp.AssemblyInfo.cs
-C:\src\git\gitStatsCSharp\gitStatsCSharp\gitStatsCSharp\obj\Debug\netcoreapp3.1\gitStatsCSharp.csproj.CoreCompileInputs.cache
