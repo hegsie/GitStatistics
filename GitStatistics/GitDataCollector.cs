@@ -365,7 +365,7 @@ namespace GitStatistics
                     filename.IndexOf(".", StringComparison.Ordinal) == 0)
                     ext = "";
                 else
-                    ext = filename.Substring(filename.IndexOf(".", StringComparison.Ordinal) + 1);
+                    ext = filename.Substring(filename.LastIndexOf(".", StringComparison.Ordinal) + 1);
                 if (ext.Length > _configuration.MaxExtensionLength) ext = "";
                 if (!Extensions.ContainsKey(ext))
                     Extensions[ext] = new Extension();
@@ -397,15 +397,20 @@ namespace GitStatistics
             var totalLines = 0;
             foreach (var line in lines)
             {
-                if (line.Length == 0) continue;
-                // <stamp> <author>
+                if (line.Length == 0) 
+                {
+                    files = 0;
+                    inserted = 0;
+                    deleted = 0;
+                    continue;
+                }
                 if (line.IndexOf(" changed,", StringComparison.CurrentCultureIgnoreCase) == -1)
                 {
                     var pos = line.IndexOf(" ", StringComparison.CurrentCultureIgnoreCase);
                     if (pos != -1)
                         try
                         {
-                            var datetime = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(line[0])).DateTime;
+                            var datetime = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(line.Substring(0,pos))).DateTime;
                             var author = line.Substring(pos + 1);
                             ChangesByDate[datetime] = new Change
                             {
@@ -428,13 +433,13 @@ namespace GitStatistics
                 else
                 {
                     files = GetIntFromStartOfRegex(line, "\\d+ file");
-                    var linesAdded = GetIntFromStartOfRegex(line, "\\d+ insertion");
-                    var linesDeleted = GetIntFromStartOfRegex(line, "\\d+ delet");
+                    inserted = GetIntFromStartOfRegex(line, "\\d+ insertion");
+                    deleted = GetIntFromStartOfRegex(line, "\\d+ delet");
 
-                    totalLines += linesAdded;
-                    totalLines -= linesDeleted;
-                    TotalLinesAdded += linesAdded;
-                    TotalLinesRemoved += linesDeleted;
+                    totalLines += inserted;
+                    totalLines -= deleted;
+                    TotalLinesAdded += inserted;
+                    TotalLinesRemoved += deleted;
                 }
             }
 
@@ -578,11 +583,6 @@ namespace GitStatistics
         public int GetTotalFiles()
         {
             return TotalFiles;
-        }
-
-        public int GetTotalLoc()
-        {
-            return TotalLines;
         }
 
         public string RevToDate(string rev)

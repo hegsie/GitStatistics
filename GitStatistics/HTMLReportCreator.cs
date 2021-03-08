@@ -104,7 +104,7 @@ namespace GitStatistics
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
                 data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
             f.Write($"<dt>Total Files</dt><dd>{data.GetTotalFiles()}</dd>");
-            f.Write("<dt>Total Lines of Code</dt><dd>{0} ({1} added, {2} removed)</dd>", data.GetTotalLoc(),
+            f.Write("<dt>Total Lines of Code</dt><dd>{0} ({1} added, {2} removed)</dd>", data.TotalLines,
                 data.TotalLinesAdded, data.TotalLinesRemoved);
             f.Write("<dt>Total Commits</dt><dd>{0} (average {1:F1} commits per active day, {2:F1} per all days)</dd>",
                 data.GetTotalCommits(), data.GetTotalCommits() / data.GetActiveDays().Count,
@@ -392,7 +392,7 @@ namespace GitStatistics
                 n += 1;
                 var info = data.GetDomainInfo(domain);
                 fp.Write("{0} {1} {2}\n", domain, n, info.Commits);
-                f.Write("<tr><th>{0}</th><td>{1} ({2}%%)</td></tr>", domain, info.Commits,
+                f.Write("<tr><th>{0}</th><td>{1} ({2}%)</td></tr>", domain, info.Commits,
                     100.0 * info.Commits / totalCommits);
             }
 
@@ -409,8 +409,8 @@ namespace GitStatistics
             PrintNav(f);
             f.Write("<dl>\n");
             f.Write($"<dt>Total files</dt><dd>{data.GetTotalFiles()}</dd>");
-            f.Write($"<dt>Total lines</dt><dd>{data.GetTotalLoc()}</dd>");
-            f.Write("<dt>Average file size</dt><dd>{0} bytes</dd>", 100.0 * data.GetTotalLoc() / data.GetTotalFiles());
+            f.Write($"<dt>Total lines</dt><dd>{data.TotalLines}</dd>");
+            f.Write("<dt>Average file size</dt><dd>{0} bytes</dd>", 100.0 * data.TotalLines / data.GetTotalFiles());
             f.Write("</dl>\n");
             // Files :: File count by date
             f.Write(html_header(2, "File count by date"));
@@ -433,9 +433,9 @@ namespace GitStatistics
             {
                 var files = data.Extensions[ext].Files;
                 var lines = data.Extensions[ext].Lines;
-                f.Write("<tr><td>{0}</td><td>{1} ({2}%%)</td><td>{3} ({4}%%)</td><td>{5}</td></tr>", ext, files,
+                f.Write("<tr><td>{0}</td><td>{1} ({2}%)</td><td>{3} ({4:F2}%)</td><td>{5}</td></tr>", ext, files,
                     100.0 * files / data.GetTotalFiles(), lines,
-                    100.0 * lines / data.GetTotalLoc(), lines / files);
+                    100.0 * lines / data.TotalLines, lines / files);
             }
 
             f.Write("</table>");
@@ -448,13 +448,13 @@ namespace GitStatistics
             f.Write("<h1>Lines</h1>");
             PrintNav(f);
             f.Write("<dl>\n");
-            f.Write("<dt>Total lines</dt><dd>{0}</dd>", data.GetTotalLoc());
+            f.Write("<dt>Total lines</dt><dd>{0}</dd>", data.TotalLines);
             f.Write("</dl>\n");
             f.Write(html_header(2, "Lines of Code"));
             f.Write($"<img src=\"lines_of_code.{ImageType}\" />");
             fg = new StreamWriter(path + "\\lines_of_code.dat");
             foreach (var stamp in data.ChangesByDate.Keys.OrderBy(p11 => p11).ToList())
-                fg.Write($"{stamp} {data.ChangesByDate[stamp].TotalLines}\n");
+                fg.Write($"{(int)(stamp.Subtract(new DateTime(1970, 1, 1))).TotalSeconds} {data.ChangesByDate[stamp].TotalLines}\n");
             fg.Close();
             f.Write("</body></html>");
             f.Close();
