@@ -19,7 +19,7 @@ namespace GitStatistics
             _cultureInfo = new CultureInfo("en-US");
             _calendar = _cultureInfo.Calendar;
 
-            ActivityByHourOfDay = new DictionaryWithDefault<int, int>();
+            ActivityByHourOfDay = new DictionaryWithDefault<int, decimal>();
             ActivityByDayOfWeek = new DictionaryWithDefault<int, int>();
             ActivityByMonthOfYear = new DictionaryWithDefault<int, int>();
             ActivityByHourOfWeek = new DictionaryWithDefault<int, DictionaryWithDefault<int, int>>();
@@ -63,7 +63,7 @@ namespace GitStatistics
 
         public DictionaryWithDefault<int, DictionaryWithDefault<int, int>> ActivityByHourOfWeek { get; set; }
 
-        public int ActivityByHourOfDayBusiest { get; set; }
+        public decimal ActivityByHourOfDayBusiest { get; set; }
 
         public DictionaryWithDefault<string, int> CommitsByTimezone { get; set; }
 
@@ -83,7 +83,7 @@ namespace GitStatistics
 
         public int TotalLinesAdded { get; set; }
 
-        public int ActivityByYearWeekPeak { get; set; }
+        public decimal ActivityByYearWeekPeak { get; set; }
 
         public int TotalAuthors { get; set; }
 
@@ -91,7 +91,7 @@ namespace GitStatistics
 
         public DictionaryWithDefault<int, int> ActivityByDayOfWeek { get; set; }
 
-        public DictionaryWithDefault<int, int> ActivityByHourOfDay { get; set; }
+        public DictionaryWithDefault<int, decimal> ActivityByHourOfDay { get; set; }
 
         public DateTime LastCommitStamp { get; set; }
 
@@ -496,7 +496,7 @@ namespace GitStatistics
             return ActivityByDayOfWeek;
         }
 
-        public Dictionary<int, int> GetActivityByHourOfDay()
+        public Dictionary<int, decimal> GetActivityByHourOfDay()
         {
             return ActivityByHourOfDay;
         }

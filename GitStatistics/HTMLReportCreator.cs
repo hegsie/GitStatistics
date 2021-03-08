@@ -147,10 +147,13 @@ namespace GitStatistics
             foreach (var i in Enumerable.Range(0, weeks - 0))
             {
                 commits = 0;
-                if (data.ActivityByYearWeek.ContainsKey(weeksList[i])) commits = data.ActivityByYearWeek[weeksList[i]];
-                var percentage = 0;
+                if (data.ActivityByYearWeek.ContainsKey(weeksList[i])) 
+                    commits = data.ActivityByYearWeek[weeksList[i]];
+
+                decimal percentage = 0;
                 if (data.ActivityByYearWeek.ContainsKey(weeksList[i]))
                     percentage = data.ActivityByYearWeek[weeksList[i]] / data.ActivityByYearWeekPeak;
+
                 var height = Math.Max(1, Convert.ToInt32(200 * percentage));
                 f.Write(
                     "<td style=\"text-align: center; vertical-align: bottom\">{0}<div style=\"display: block; background-color: red; width: 20px; height: {1}px\"></div></td>",
@@ -188,8 +191,8 @@ namespace GitStatistics
                 if (hourOfDay.ContainsKey(i))
                 {
                     r = 127 + Convert.ToInt32(hourOfDay[i] / data.ActivityByHourOfDayBusiest * 128);
-                    f.Write("<td style=\"background-color: rgb({0}, 0, 0)\">{1}</td>", r,
-                        100.0 * hourOfDay[i] / totalCommits);
+                    f.Write("<td style=\"background-color: rgb({0}, 0, 0)\">{1:F2}</td>", r,
+                        100 * hourOfDay[i] / totalCommits);
                 }
                 else
                 {

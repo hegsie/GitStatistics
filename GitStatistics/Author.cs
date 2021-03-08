@@ -9,14 +9,14 @@ namespace GitStatistics
         public DateTime LastCommitStamp { get; set; }
         public DateTime FirstCommitStamp { get; set; }
 
-        public int Commits { get; set; }
+        public decimal Commits { get; set; }
         public DateTime LastActiveDay { get; set; }
 
         public int ActiveDays { get; set; }
 
         public int PlaceByCommits { get; set; }
 
-        public int CommitsFrac { get; set; }
+        public decimal CommitsFrac { get; set; }
 
         public DateTime DateFirst { get; set; }
 
