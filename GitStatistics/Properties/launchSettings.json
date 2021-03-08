@@ -2,7 +2,7 @@
   "profiles": {
     "GitStatistics": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\src\\git\\service-manager-cli C:\\src\\git\\output\\service-manager-cli"
+      "commandLineArgs": "-r C:\\src\\git\\service-manager-cli -o C:\\src\\git\\output\\service-manager-cli"
     }
   }
 }

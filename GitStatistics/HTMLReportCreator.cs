@@ -38,6 +38,12 @@ namespace GitStatistics
         private string _title;
 
         private readonly int version = 1;
+        private Configuration _configuration;
+
+        public HtmlReportCreator(Configuration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public static string html_linkify(string text)
         {
@@ -330,9 +336,9 @@ namespace GitStatistics
 
             f.Write("</table>");
             var allAuthors = data.GetAuthors().ToArray();
-            if (allAuthors.Count() > (int) GitStats.Conf["max_authors"])
+            if (allAuthors.Count() > _configuration.MaxAuthors)
             {
-                var rest = allAuthors.Take((int) GitStats.Conf["max_authors"]);
+                var rest = allAuthors.Take(_configuration.MaxAuthors);
                 f.Write("<p class=\"moreauthors\">These didn\'t make it to the top: {0}</p>", string.Join(", ", rest));
             }
 
@@ -381,7 +387,7 @@ namespace GitStatistics
             var n = 0;
             foreach (var domain in domainsByCommits)
             {
-                if (n == (int) GitStats.Conf["max_domains"]) break;
+                if (n == _configuration.MaxDomains) break;
                 commits = 0;
                 n += 1;
                 var info = data.GetDomainInfo(domain);
@@ -620,7 +626,7 @@ plot 'lines_of_code.dat' using 1:2 w lines
                                     <html xmlns=""http://www.w3.org/1999/xhtml"">
                                     <head>
 	                                    <title>GitStats - {this._title}</title>
-	                                    <link rel=""stylesheet"" href=""{GitStats.Conf["style"]}"" type=""text/css"" />
+	                                    <link rel=""stylesheet"" href=""{_configuration.Style}"" type=""text/css"" />
 	                                    <meta name=""generator"" content=""GitStatistics {version}"" />
 	                                    <script type=""text/javascript"" src=""sortable.js""></script>
                                     </head>

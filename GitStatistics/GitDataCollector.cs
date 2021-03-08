@@ -11,6 +11,7 @@ namespace GitStatistics
     {
         private readonly CultureInfo _cultureInfo;
         private readonly Calendar _calendar;
+        private Configuration _configuration;
 
         public GitDataCollector()
         {
@@ -98,10 +99,11 @@ namespace GitStatistics
 
         public int TotalFiles { get; set; }
 
-        public void Collect(string directory)
+        public void Collect(string directory, Configuration configuration)
         {
+            _configuration = configuration;
             Dir = directory;
-            ProjectName = Path.GetFileName(directory); 
+            ProjectName = Path.GetFileName(directory);
 
             GetTotalAuthors();
 
@@ -345,7 +347,6 @@ namespace GitStatistics
 
         private void GetExtensions()
         {
-            // extensions
             Extensions = new DictionaryWithDefault<string, Extension>();
             var lines = GitStats.GetPipeOutput(new[]
             {
@@ -365,7 +366,7 @@ namespace GitStatistics
                     ext = "";
                 else
                     ext = filename.Substring(filename.IndexOf(".", StringComparison.Ordinal) + 1);
-                if (ext.Length > (int) GitStats.Conf["max_ext_length"]) ext = "";
+                if (ext.Length > _configuration.MaxExtensionLength) ext = "";
                 if (!Extensions.ContainsKey(ext))
                     Extensions[ext] = new Extension();
                 Extensions[ext].Files += 1;

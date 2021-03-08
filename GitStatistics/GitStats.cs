@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Gnu.Getopt;
+using CommandLine;
 
 namespace GitStatistics
 {
@@ -18,28 +16,6 @@ namespace GitStatistics
         public static DateTime ExecTimeExternal;
 
         public static DateTime TimeStart = DateTime.Now;
-
-        public static Dictionary<string, object> Conf = new Dictionary<string, object>
-        {
-            {
-                "max_domains",
-                10
-            },
-            {
-                "max_ext_length",
-                10
-            },
-            {
-                "style",
-                "gitstats.css"
-            },
-            {
-                "max_authors",
-                20
-            }
-        };
-
-        // dict['author'] = { 'commits': 512 } - ...key(dict, 'commits')
 
         public static int Version;
 
@@ -54,12 +30,11 @@ namespace GitStatistics
             }
 
             // Start the child process.
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             foreach (var cmd in cmds)
-            {
                 if (sb.Length > 0)
                 {
-                    Process p0 = new Process
+                    var p0 = new Process
                     {
                         StartInfo =
                         {
@@ -74,7 +49,7 @@ namespace GitStatistics
 
                     p0.Start();
 
-                    StreamWriter inputStream = p0.StandardInput;
+                    var inputStream = p0.StandardInput;
 
                     inputStream.Write(sb.ToString());
                     inputStream.Close();
@@ -85,7 +60,7 @@ namespace GitStatistics
                 }
                 else
                 {
-                    Process p0 = new Process
+                    var p0 = new Process
                     {
                         StartInfo =
                         {
@@ -102,7 +77,6 @@ namespace GitStatistics
                     sb.Append(p0.StandardOutput.ReadToEnd());
                     p0.WaitForExit();
                 }
-            }
 
             var end = DateTime.Now;
             if (!quiet)
@@ -126,77 +100,46 @@ namespace GitStatistics
 
         public void Run(string[] argsOrig)
         {
-            var g = new Getopt("GitStatistics", argsOrig, "c:");
-            int c;
-            while ((c = g.getopt()) != -1)
-            {
-                switch (c)
+            Parser.Default.ParseArguments<Configuration>(argsOrig)
+                .WithParsed(o =>
                 {
-                    case 'c':
-                        var tup3 = g.Optarg.Split("=", 1);
-                        var key = tup3[0];
-                        var value = tup3[1];
-                        if (!Conf.Keys.Contains(key))
-                            throw new ApplicationException($"Error: no such key {key} in config");
-                        if (Conf[key] is int)
-                            Conf[key] = Convert.ToInt32(value);
-                        else
-                            Conf[key] = value;
-                        break;
+                    var gitPath = Path.GetFullPath(o.RepositoryPath);
+                    var outputPath = Path.GetFullPath(o.OutputPath);
+                    var runDir = Directory.GetCurrentDirectory();
+                    try
+                    {
+                        Directory.CreateDirectory(outputPath);
+                    }
+                    catch
+                    {
+                    }
 
-                    case '?':
-                        Console.WriteLine(@"Usage: gitstats [options] <gitpath> <outputpath>
+                    if (!Directory.Exists(outputPath))
+                    {
+                        Console.WriteLine("FATAL: Output Path is not a directory or does not exist");
+                        Environment.Exit(1);
+                    }
 
-                                                    Options:
-                                                    -c key=value     Override configuration value
-
-                                                    Default config values:
-                                                    {0}
-                                                    ", Conf);
-                        Environment.Exit(0);
-                        break;
-
-                    default:
-                        Console.WriteLine("getopt() returned " + c);
-                        break;
-                }
-            }
-            
-            var gitPath = g.Argv[0];
-            var outputPath = Path.GetFullPath(g.Argv[1]);
-            var runDir = Directory.GetCurrentDirectory();
-            try
-            {
-                Directory.CreateDirectory(outputPath);
-            }
-            catch
-            { }
-
-            if (!Directory.Exists(outputPath))
-            {
-                Console.WriteLine("FATAL: Output Path is not a directory or does not exist");
-                Environment.Exit(1);
-            }
-
-            Console.WriteLine($"Git Path: {gitPath}");
-            Console.WriteLine("Output Path: {0}", outputPath);
-            Directory.SetCurrentDirectory(gitPath);
-            var cacheFile = Path.Join(outputPath, "gitstats.cache");
-            Console.WriteLine("Collecting Data...");
-            var data = new GitDataCollector();
-            data.LoadCache(cacheFile);
-            data.Collect(gitPath);
-            Console.WriteLine("Refining Data...");
-            data.SaveCache(cacheFile);
-            data.Refine();
-            Directory.SetCurrentDirectory(runDir);
-            Console.WriteLine("Generating report...");
-            var report = new HtmlReportCreator();
-            report.Create(data, outputPath);
-            var timeEnd = DateTime.Now;
-            var exectimeInternal = timeEnd - TimeStart;
-            Console.WriteLine(
-                $"Execution time {exectimeInternal} secs, {ExecTimeExternal} secs ({0 /*100.0 *  ExecTimeExternal / exectimeInternal*/} %%) in external commands)");
+                    Console.WriteLine($"Git Path: {gitPath}");
+                    Console.WriteLine("Output Path: {0}", outputPath);
+                    Directory.SetCurrentDirectory(gitPath);
+                    var cacheFile = Path.Join(outputPath, "gitstats.cache");
+                    Console.WriteLine("Collecting Data...");
+                    var data = new GitDataCollector();
+                    data.LoadCache(cacheFile);
+                    data.Collect(gitPath, o);
+                    Console.WriteLine("Refining Data...");
+                    data.SaveCache(cacheFile);
+                    data.Refine();
+                    Directory.SetCurrentDirectory(runDir);
+                    Console.WriteLine("Generating report...");
+                    var report = new HtmlReportCreator(o);
+                    report.Create(data, outputPath);
+                    var timeEnd = DateTime.Now;
+                    var execTimeInternal = timeEnd - TimeStart;
+                    Console.WriteLine(
+                        $"Execution time {execTimeInternal} secs, {ExecTimeExternal} secs ({0 /*100.0 *  ExecTimeExternal / exectimeInternal*/} %%) in external commands)");
+                });
         }
     }
 }
