@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GitStatistics": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\src\\git\\service-manager-webapi C:\\src\\git\\output\\service-manager-webapi "
+    }
+  }
+}
