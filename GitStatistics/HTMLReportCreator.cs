@@ -418,7 +418,7 @@ namespace GitStatistics
             var filesByDate = new List<string>();
             foreach (var stamp in data.FilesByStamp.Keys.OrderBy(p8 => p8).ToList())
                 filesByDate.Add(
-                    $"{DateTimeOffset.FromUnixTimeSeconds(stamp).DateTime:YY-MM-dd} {data.FilesByStamp[stamp]}");
+                    $"{stamp:yyyy-MM-dd} {data.FilesByStamp[stamp]}");
             fg = new StreamWriter(path + "\\files_by_date.dat");
             foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList()) 
                 fg.Write($"{line}\n");

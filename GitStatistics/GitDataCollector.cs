@@ -69,7 +69,7 @@ namespace GitStatistics
 
         public int TotalCommits { get; set; }
 
-        public DictionaryWithDefault<long, object> FilesByStamp { get; set; }
+        public DictionaryWithDefault<DateTime, int> FilesByStamp { get; set; }
 
         public DictionaryWithDefault<string, Extension> Extensions { get; set; }
 
@@ -314,7 +314,7 @@ namespace GitStatistics
             // TODO Optimize this, it's the worst bottleneck
             // outputs "<stamp> <files>" for each revision
             lines.Clear();
-            FilesByStamp = new DictionaryWithDefault<long, object>();
+            FilesByStamp = new DictionaryWithDefault<DateTime, int>();
             var revLines = GitStats.GetPipeOutput(new[]
             {
                 "git rev-list --pretty=format:\"%at %T\" HEAD",
@@ -336,7 +336,7 @@ namespace GitStatistics
                 if (parts.Length != 2) continue;
                 try
                 {
-                    FilesByStamp[Convert.ToInt32(parts[0])] = Convert.ToInt32(parts[1]);
+                    FilesByStamp[DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(parts[0])).DateTime] = Convert.ToInt32(parts[1]);
                 }
                 catch (FormatException)
                 {
