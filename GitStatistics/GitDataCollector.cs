@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,41 +9,41 @@ namespace GitStatistics
 {
     public class GitDataCollector : DataCollector
     {
-        public Dictionary<string, Tag> Tags { get; set; }
+        public DictionaryWithDefault<string, Tag> Tags { get; set; }
 
         public DictionaryWithDefault<string, Domain> Domains { get; set; }
 
         public DateTime LastActiveDay { get; set; }
 
-        public Dictionary<int, int> CommitsByYear { get; set; }
+        public DictionaryWithDefault<int, int> CommitsByYear { get; set; }
 
-        public Dictionary<int, Dictionary<string, int>> AuthorOfYear { get; set; }
+        public DictionaryWithDefault<int, DictionaryWithDefault<string, int>> AuthorOfYear { get; set; }
 
-        public Dictionary<string, int> CommitsByMonth { get; set; }
+        public DictionaryWithDefault<string, int> CommitsByMonth { get; set; }
 
-        public Dictionary<string, Dictionary<string, int>> AuthorOfMonth { get; set; }
+        public DictionaryWithDefault<string, DictionaryWithDefault<string, int>> AuthorOfMonth { get; set; }
 
-        public Dictionary<object, int> ActivityByYearWeek { get; set; }
+        public DictionaryWithDefault<string, int> ActivityByYearWeek { get; set; }
 
-        public Dictionary<int, int> ActivityByMonthOfYear { get; set; }
+        public DictionaryWithDefault<int, int> ActivityByMonthOfYear { get; set; }
 
         public int ActivityByHourOfWeekBusiest { get; set; }
 
-        public Dictionary<int, Dictionary<int, int>> ActivityByHourOfWeek { get; set; }
+        public DictionaryWithDefault<int, DictionaryWithDefault<int, int>> ActivityByHourOfWeek { get; set; }
 
         public int ActivityByHourOfDayBusiest { get; set; }
 
-        public Dictionary<string, int> CommitsByTimezone { get; set; }
+        public DictionaryWithDefault<string, int> CommitsByTimezone { get; set; }
 
         public int TotalCommits { get; set; }
 
-        public Dictionary<long, object> FilesByStamp { get; set; }
+        public DictionaryWithDefault<long, object> FilesByStamp { get; set; }
 
-        public Dictionary<string, Dictionary<string, int>> Extensions { get; set; }
+        public DictionaryWithDefault<string, DictionaryWithDefault<string, int>> Extensions { get; set; }
 
-        public Dictionary<DateTime, Change> ChangesByDate { get; set; }
+        public DictionaryWithDefault<DateTime, Change> ChangesByDate { get; set; }
 
-        public Dictionary<string, Author> Authors { get; set; }
+        public DictionaryWithDefault<string, Author> Authors { get; set; }
 
         public int TotalLines { get; set; }
 
@@ -90,31 +91,36 @@ namespace GitStatistics
                 TotalAuthors = 0;
             }
 
+
+            // Gets the Calendar instance associated with a CultureInfo.
+            CultureInfo myCI = new CultureInfo("en-US");
+            Calendar myCal = myCI.Calendar;
+
             ActivityByHourOfDay = new DictionaryWithDefault<int, int>();
             ActivityByDayOfWeek = new DictionaryWithDefault<int, int>();
-            ActivityByMonthOfYear = new Dictionary<int, int>();
-            ActivityByHourOfWeek = new Dictionary<int, Dictionary<int, int>>();
+            ActivityByMonthOfYear = new DictionaryWithDefault<int, int>();
+            ActivityByHourOfWeek = new DictionaryWithDefault<int, DictionaryWithDefault<int, int>>();
             ActivityByHourOfDayBusiest = 0;
             ActivityByHourOfWeekBusiest = 0;
-            ActivityByYearWeek = new Dictionary<object, int>();
+            ActivityByYearWeek = new DictionaryWithDefault<string, int>();
             ActivityByYearWeekPeak = 0;
-            Authors = new Dictionary<string, Author>();
+            Authors = new DictionaryWithDefault<string, Author>();
             // domains
             Domains = new DictionaryWithDefault<string, Domain>();
             // author of the month
-            AuthorOfMonth = new Dictionary<string, Dictionary<string, int>>();
-            AuthorOfYear = new Dictionary<int, Dictionary<string, int>>();
-            CommitsByMonth = new Dictionary<string, int>();
-            CommitsByYear = new Dictionary<int, int>();
+            AuthorOfMonth = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
+            AuthorOfYear = new DictionaryWithDefault<int, DictionaryWithDefault<string, int>>();
+            CommitsByMonth = new DictionaryWithDefault<string, int>();
+            CommitsByYear = new DictionaryWithDefault<int, int>();
             ActiveDays = new List<DateTime>();
             // lines
             TotalLines = 0;
             TotalLinesAdded = 0;
             TotalLinesRemoved = 0;
             // timezone
-            CommitsByTimezone = new Dictionary<string, int>();
+            CommitsByTimezone = new DictionaryWithDefault<string, int>();
             // tags
-            Tags = new Dictionary<string, Tag>();
+            Tags = new DictionaryWithDefault<string, Tag>();
             var lines = GitStats.GetPipeOutput(new[]
             {
                 "git show-ref --tags"
@@ -224,7 +230,7 @@ namespace GitStatistics
                 // commits
                 Domains[domain].Commits = Domains[domain].Commits + 1;
                 // hour of week
-                if (!ActivityByHourOfWeek.ContainsKey(day)) ActivityByHourOfWeek[day] = new Dictionary<int, int>();
+                if (!ActivityByHourOfWeek.ContainsKey(day)) ActivityByHourOfWeek[day] = new DictionaryWithDefault<int, int>();
                 ActivityByHourOfWeek[day][hour] = ActivityByHourOfWeek[day][hour] + 1;
                 // most active hour?
                 if (ActivityByHourOfWeek[day][hour] > ActivityByHourOfWeekBusiest)
@@ -233,7 +239,8 @@ namespace GitStatistics
                 var month = date.Month;
                 ActivityByMonthOfYear[month] = ActivityByMonthOfYear[month] + 1;
                 // yearly/weekly activity
-                var yyw = date.ToString("%Y-%W");
+                var yyw =
+                    $"{date.Year}-{myCal.GetWeekOfYear(date, myCI.DateTimeFormat.CalendarWeekRule, myCI.DateTimeFormat.FirstDayOfWeek)}";
                 ActivityByYearWeek[yyw] = ActivityByYearWeek[yyw] + 1;
                 if (ActivityByYearWeekPeak < ActivityByYearWeek[yyw]) ActivityByYearWeekPeak = ActivityByYearWeek[yyw];
                 // author stats
@@ -244,17 +251,17 @@ namespace GitStatistics
                 Authors[author].FirstCommitStamp = stamp;
                 Authors[author].Commits = Authors[author].Commits + 1;
                 // author of the month/year
-                var yymm = date.ToString("%Y-%m");
+                var yymm = $"{date.Year}-{date.Month}";
                 if (AuthorOfMonth.ContainsKey(yymm))
                     AuthorOfMonth[yymm][author] = AuthorOfMonth[yymm][author] + 1;
                 else
-                    AuthorOfMonth[yymm] = new Dictionary<string, int> {[author] = 1};
+                    AuthorOfMonth[yymm] = new DictionaryWithDefault<string, int> {[author] = 1};
                 CommitsByMonth[yymm] = CommitsByMonth[yymm] + 1;
                 var yy = date.Year;
                 if (AuthorOfYear.ContainsKey(yy))
                     AuthorOfYear[yy][author] = AuthorOfYear[yy][author] + 1;
                 else
-                    AuthorOfYear[yy] = new Dictionary<string, int> {[author] = 1};
+                    AuthorOfYear[yy] = new DictionaryWithDefault<string, int> {[author] = 1};
                 CommitsByYear[yy] = CommitsByYear[yy] + 1;
                 // authors: active days
                 var yymmdd = date;
@@ -282,7 +289,7 @@ namespace GitStatistics
 
             // TODO Optimize this, it's the worst bottleneck
             // outputs "<stamp> <files>" for each revision
-            FilesByStamp = new Dictionary<long, object>();
+            FilesByStamp = new DictionaryWithDefault<long, object>();
             var revlines = GitStats.GetPipeOutput(new[]
             {
                 "git rev-list --pretty=format:\"%at %T\" HEAD",
@@ -314,7 +321,7 @@ namespace GitStatistics
             }
 
             // extensions
-            Extensions = new Dictionary<string, Dictionary<string, int>>();
+            Extensions = new DictionaryWithDefault<string, DictionaryWithDefault<string, int>>();
             lines = GitStats.GetPipeOutput(new[]
             {
                 "git ls-tree -r -z HEAD"
@@ -334,7 +341,7 @@ namespace GitStatistics
                     ext = filename.Substring(filename.IndexOf(".", StringComparison.Ordinal) + 1);
                 if (ext.Length > (int) GitStats.Conf["max_ext_length"]) ext = "";
                 if (!Extensions.ContainsKey(ext))
-                    Extensions[ext] = new Dictionary<string, int>
+                    Extensions[ext] = new DictionaryWithDefault<string, int>
                     {
                         {
                             "files",
@@ -360,7 +367,7 @@ namespace GitStatistics
             // outputs:
             //  N files changed, N insertions (+), N deletions(-)
             // <stamp> <author>
-            ChangesByDate = new Dictionary<DateTime, Change>();
+            ChangesByDate = new DictionaryWithDefault<DateTime, Change>();
             lines = GitStats.GetPipeOutput(new[] {"git log --shortstat --pretty=format:\"%at %an\""}).Split("\n")
                 .ToList();
             lines.Reverse();
@@ -496,7 +503,7 @@ namespace GitStatistics
             return Domains.Keys;
         }
 
-        public object GetFilesInCommit(string rev)
+        public int GetFilesInCommit(string rev)
         {
             int res;
             try
@@ -507,7 +514,7 @@ namespace GitStatistics
             {
                 res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
                 {
-                    string.Format("git ls-tree -r --name-only \"%s\"", rev),
+                    string.Format("git ls-tree -r --name-only \"{0}\"", rev),
                     "wc -l"
                 }).Split("\n")[0]);
                 if (!Cache.ContainsKey("files_in_tree")) Cache["files_in_tree"] = new Dictionary<string, int>();

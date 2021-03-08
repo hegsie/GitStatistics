@@ -110,7 +110,7 @@ namespace GitStatistics
             f.Write("<p>Last {0} weeks</p>", weeks);
             // generate weeks to show (previous N weeks from now)
             var now = DateTime.Now;
-            var weeksList = new List<object>();
+            var weeksList = new List<string>();
             var stampCur = now;
 
             foreach (var i in Enumerable.Range(0, weeks - 0))
