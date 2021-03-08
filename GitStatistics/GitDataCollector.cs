@@ -270,7 +270,7 @@ namespace GitStatistics
                 Authors[author].FirstCommitStamp = stamp;
                 Authors[author].Commits = Authors[author].Commits + 1;
                 // author of the month/year
-                var yymm = $"{date.Year}-{date.Month}";
+                var yymm = $"{date.Year}-{date.Month:D2}";
                 if (AuthorOfMonth.ContainsKey(yymm))
                     AuthorOfMonth[yymm][author] = AuthorOfMonth[yymm][author] + 1;
                 else
@@ -506,11 +506,11 @@ namespace GitStatistics
             return Authors[author];
         }
 
-        public IEnumerable<string> GetAuthors()
+        public IEnumerable<string> GetAuthors(int configurationMaxAuthors)
         {
             var res = GetKeysSortedByAuthorKey(Authors);
             res = res.Reverse();
-            return res;
+            return res.Take(configurationMaxAuthors);
         }
 
         public long GetCommitDeltaDays()

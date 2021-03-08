@@ -216,7 +216,7 @@ namespace GitStatistics
                 f.Write("<tr>");
                 f.Write("<th>{0}</th>", d + 1);
                 if (dayOfWeek.ContainsKey(d))
-                    f.Write("<td>{0} ({1}%%)</td>", dayOfWeek[d], 100.0 * dayOfWeek[d] / totalCommits);
+                    f.Write("<td>{0} ({1:F2}%)</td>", dayOfWeek[d], 100.0 * dayOfWeek[d] / totalCommits);
                 else
                     f.Write("<td>0</td>");
                 f.Write("</tr>");
@@ -267,7 +267,7 @@ namespace GitStatistics
             {
                 commits = 0;
                 if (data.ActivityByMonthOfYear.ContainsKey(mm)) commits = data.ActivityByMonthOfYear[mm];
-                f.Write("<tr><td>{0}</td><td>{1} ({2} %%)</td></tr>", mm, commits,
+                f.Write("<tr><td>{0}</td><td>{1} ({2:F2} %)</td></tr>", mm, commits,
                     100.0 * commits / data.GetTotalCommits());
                 fp.Write("{0} {1}\n", mm, commits);
             }
@@ -290,7 +290,7 @@ namespace GitStatistics
             f.Write(html_header(2, "Commits by Year"));
             f.Write("<div class=\"vtable\"><table><tr><th>Year</th><th>Commits (% of all)</th></tr>");
             foreach (var yy in data.CommitsByYear.Keys.OrderBy(p3 => p3).Reverse().ToList())
-                f.Write("<tr><td>{0}</td><td>{1} ({2}%%)</td></tr>", yy, data.CommitsByYear[yy],
+                f.Write("<tr><td>{0}</td><td>{1} ({2:F2}%)</td></tr>", yy, data.CommitsByYear[yy],
                     100.0 * data.CommitsByYear[yy] / data.GetTotalCommits());
             f.Write("</table></div>");
             f.Write($"<img src=\"commits_by_year.{ImageType}\" alt=\"Commits by Year\" />");
@@ -324,18 +324,18 @@ namespace GitStatistics
             f.Write("<table class=\"authors sortable\" id=\"authors\">");
             f.Write(
                 "<tr><th>Author</th><th>Commits (%)</th><th>+ lines</th><th>- lines</th><th>First commit</th><th>Last commit</th><th class=\"unsortable\">Age</th><th>Active days</th><th># by commits</th></tr>");
-            foreach (var author in data.GetAuthors())
+            foreach (var author in data.GetAuthors(_configuration.MaxAuthors))
             {
                 var info = data.GetAuthorInfo(author);
                 f.Write(
-                    "<tr><td>{0}</td><td>{1} ({2}%%)</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td><td>{9}</td></tr>",
+                    "<tr><td>{0}</td><td>{1} ({2}%)</td><td>{3}</td><td>{4}</td><td>{5:yyyy-MM-dd}</td><td>{6:yyyy-MM-dd}</td><td>{7}</td><td>{8}</td><td>{9}</td></tr>",
                     author, info.Commits, info.CommitsFrac, info.LinesAdded, info.LinesRemoved,
                     info.DateFirst, info.DateLast, info.TimeDelta, info.ActiveDays,
                     info.PlaceByCommits);
             }
 
             f.Write("</table>");
-            var allAuthors = data.GetAuthors().ToArray();
+            var allAuthors = data.GetAuthors(_configuration.MaxAuthors).ToArray();
             if (allAuthors.Count() > _configuration.MaxAuthors)
             {
                 var rest = allAuthors.Take(_configuration.MaxAuthors);
@@ -352,10 +352,11 @@ namespace GitStatistics
             {
                 var authordict = data.AuthorOfMonth[yymm];
                 authors = authordict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
-                authors = authors.Reverse().ToArray();
                 commits = data.AuthorOfMonth[yymm][authors[0]];
-                next = string.Join(", ", authors.ToList().GetNth(5));
-                f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3}%% of {4})</td><td>{5}</td></tr>", yymm, authors[0],
+                var top5 = new List<string>(authors.ToList());
+                top5.RemoveAt(0);
+                next = string.Join(", ", top5.Take(5));
+                f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3:F2}% of {4})</td><td>{5}</td></tr>", yymm, authors[0],
                     commits, 100.0 * commits / data.CommitsByMonth[yymm], data.CommitsByMonth[yymm], next);
             }
 
@@ -367,11 +368,11 @@ namespace GitStatistics
             {
                 var authordict = data.AuthorOfYear[yy];
                 authors = authordict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
-                authors = authors.Reverse().ToArray();
                 commits = data.AuthorOfYear[yy][authors[0]];
-                // next = ", ".join(authors[1::5]);
-                next = string.Join(", ", authors.ToList().GetNth(5));
-                f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3}%% of {4})</td><td>{5}</td></tr>", yy, authors[0],
+                var top5 = new List<string>(authors.ToList());
+                top5.RemoveAt(0);
+                next = string.Join(", ", top5.Take(5));
+                f.Write("<tr><td>{0}</td><td>{1}</td><td>{2} ({3:F2}% of {4})</td><td>{5}</td></tr>", yy, authors[0],
                     commits, 100.0 * commits / data.CommitsByYear[yy], data.CommitsByYear[yy], next);
             }
 
@@ -392,7 +393,7 @@ namespace GitStatistics
                 n += 1;
                 var info = data.GetDomainInfo(domain);
                 fp.Write("{0} {1} {2}\n", domain, n, info.Commits);
-                f.Write("<tr><th>{0}</th><td>{1} ({2}%)</td></tr>", domain, info.Commits,
+                f.Write("<tr><th>{0}</th><td>{1} ({2:F2}%)</td></tr>", domain, info.Commits,
                     100.0 * info.Commits / totalCommits);
             }
 
