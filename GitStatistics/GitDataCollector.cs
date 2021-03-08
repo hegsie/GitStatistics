@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace GitStatistics
@@ -230,7 +231,9 @@ namespace GitStatistics
                 // commits
                 Domains[domain].Commits = Domains[domain].Commits + 1;
                 // hour of week
-                if (!ActivityByHourOfWeek.ContainsKey(day)) ActivityByHourOfWeek[day] = new DictionaryWithDefault<int, int>();
+                if (!ActivityByHourOfWeek.ContainsKey(day)) 
+                    ActivityByHourOfWeek[day] = new DictionaryWithDefault<int, int>();
+
                 ActivityByHourOfWeek[day][hour] = ActivityByHourOfWeek[day][hour] + 1;
                 // most active hour?
                 if (ActivityByHourOfWeek[day][hour] > ActivityByHourOfWeekBusiest)
@@ -309,10 +312,9 @@ namespace GitStatistics
             {
                 parts = line.Split(" ");
                 if (parts.Length != 2) continue;
-                var nth = parts.ToList().GetNth(2).ToArray(); // (stamp, files)
                 try
                 {
-                    FilesByStamp[Convert.ToInt32(nth[0])] = Convert.ToInt32(nth[1]);
+                    FilesByStamp[Convert.ToInt32(parts[0])] = Convert.ToInt32(parts[1]);
                 }
                 catch (FormatException)
                 {
@@ -380,7 +382,7 @@ namespace GitStatistics
             {
                 if (line.Length == 0) continue;
                 // <stamp> <author>
-                if (line.IndexOf("files changed,", StringComparison.CurrentCultureIgnoreCase) == -1)
+                if (line.IndexOf(" changed,", StringComparison.CurrentCultureIgnoreCase) == -1)
                 {
                     var pos = line.IndexOf(" ", StringComparison.CurrentCultureIgnoreCase);
                     if (pos != -1)
@@ -408,30 +410,31 @@ namespace GitStatistics
                 }
                 else
                 {
-                    var re = new Regex("\\d+");
-                    var matchCollection = re.Matches(line);
+                    files = GetIntFromStartOfRegex(line, "\\d+ file");
+                    var linesAdded = GetIntFromStartOfRegex(line, "\\d+ insertion");
+                    var linesDeleted = GetIntFromStartOfRegex(line, "\\d+ delet");
 
-                    //var numbers = re.findall("\\d+", line);
-                    if (matchCollection.Count() == 3)
-                    {
-                        //(files, inserted, deleted) = matchCollection.Select(el => el.Index);
-
-                        var indexes = matchCollection.Select(el => el.Index).ToArray();
-                        totalLines += indexes[1];
-                        totalLines -= indexes[2];
-                        TotalLinesAdded += indexes[1];
-                        TotalLinesRemoved += indexes[2];
-                    }
-                    else
-                    {
-                        Console.WriteLine("Warning: failed to handle line \"%s\"", line);
-                        (files, inserted, deleted) = (0, 0, 0);
-                        //self.Changes_by_date[stamp] = { 'files': files, 'ins': inserted, 'del': deleted }
-                    }
+                    totalLines += linesAdded;
+                    totalLines -= linesDeleted;
+                    TotalLinesAdded += linesAdded;
+                    TotalLinesRemoved += linesDeleted;
                 }
             }
 
             TotalLines = totalLines;
+        }
+
+        public int GetIntFromStartOfRegex(string line, string regex)
+        {
+            string output = "0";
+            var filesChangedRe = new Regex(regex);
+            var fileChangedCollection = filesChangedRe.Matches(line);
+            foreach (Match match in fileChangedCollection)
+            {
+                var groupValue = match.Groups[0].Value;
+                output = groupValue.Split(" ")[0];
+            }
+            return Convert.ToInt32(output);
         }
 
 
@@ -514,7 +517,7 @@ namespace GitStatistics
             {
                 res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
                 {
-                    string.Format("git ls-tree -r --name-only \"{0}\"", rev),
+                    $"git ls-tree -r --name-only \"{rev}\"",
                     "wc -l"
                 }).Split("\n")[0]);
                 if (!Cache.ContainsKey("files_in_tree")) Cache["files_in_tree"] = new Dictionary<string, int>();
@@ -545,7 +548,7 @@ namespace GitStatistics
             {
                 res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
                 {
-                    string.Format("git cat-file blob %s", sha1),
+                    $"git cat-file blob {sha1}",
                     "wc -l"
                 }).Split()[0]);
                 if (!Cache.ContainsKey("lines_in_blob")) Cache["lines_in_blob"] = new Dictionary<string, int>();
@@ -565,7 +568,7 @@ namespace GitStatistics
             return lines.Split("\n");
         }
 
-        public object GetTagDate(object tag)
+        public string GetTagDate(string tag)
         {
             return RevToDate("tags/" + tag);
         }
@@ -590,11 +593,11 @@ namespace GitStatistics
             return TotalLines;
         }
 
-        public string RevToDate(object rev)
+        public string RevToDate(string rev)
         {
             var stamp = Convert.ToInt32(GitStats.GetPipeOutput(new[]
             {
-                string.Format("git log --pretty=format:%%at \"%s\" -n 1", rev)
+                $"git log --pretty=format:%%at \"{rev}\" -n 1"
             }));
             return DateTimeOffset.FromUnixTimeSeconds(stamp).DateTime.ToString("%Y-%m-%d");
         }
