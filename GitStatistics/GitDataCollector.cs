@@ -476,7 +476,7 @@ namespace GitStatistics
             foreach (var name in Authors.Keys)
             {
                 var a = Authors[name];
-                a.CommitsFrac = 100 * a.Commits / GetTotalCommits();
+                a.CommitsFrac = 100 * a.Commits / TotalCommits;
                 var dateFirst = a.FirstCommitStamp;
                 var dateLast = a.LastCommitStamp;
                 var delta = dateLast - dateFirst;
@@ -515,7 +515,8 @@ namespace GitStatistics
 
         public long GetCommitDeltaDays()
         {
-            return (LastCommitStamp - FirstCommitStamp).Days;
+            var deltaDays = (LastCommitStamp - FirstCommitStamp).Days;
+            return deltaDays == 0 ? 1 : deltaDays;
         }
 
         public Domain GetDomainInfo(string domain)
@@ -573,16 +574,6 @@ namespace GitStatistics
             }
 
             return res;
-        }
-
-        public int GetTotalCommits()
-        {
-            return TotalCommits;
-        }
-
-        public int GetTotalFiles()
-        {
-            return TotalFiles;
         }
 
         public string RevToDate(string rev)

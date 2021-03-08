@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using GlobExpressions;
 
 namespace GitStatistics
@@ -56,6 +57,17 @@ namespace GitStatistics
             return $"\n<h{level}><a href=\"#{name}\" name=\"{name}\">{text}</a></h{level}>\n\n";
         }
 
+        public static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string path = Uri.UnescapeDataString(uri.Path);
+                return System.IO.Path.GetDirectoryName(path);
+            }
+        }
+
         public void Create(GitDataCollector data, string path)
         {
             object next;
@@ -68,7 +80,7 @@ namespace GitStatistics
             _title = data.ProjectName;
             // copy static files. Looks in the binary directory, ../share/gitstats and /usr/share/gitstats
             var binaryPath = Directory.GetCurrentDirectory();
-            var secondaryPath = System.IO.Path.Join(binaryPath, "..", "share", "gitstats");
+            var secondaryPath = AssemblyDirectory;
             var baseDirs = new List<object>
             {
                 binaryPath,
@@ -103,12 +115,12 @@ namespace GitStatistics
             f.Write($"<dt>Report Period</dt><dd>{data.GetFirstCommitDate().ToString(format)} to {data.GetLastCommitDate().ToString(format)}</dd>");
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
                 data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
-            f.Write($"<dt>Total Files</dt><dd>{data.GetTotalFiles()}</dd>");
+            f.Write($"<dt>Total Files</dt><dd>{data.TotalFiles}</dd>");
             f.Write("<dt>Total Lines of Code</dt><dd>{0} ({1} added, {2} removed)</dd>", data.TotalLines,
                 data.TotalLinesAdded, data.TotalLinesRemoved);
             f.Write("<dt>Total Commits</dt><dd>{0} (average {1:F1} commits per active day, {2:F1} per all days)</dd>",
-                data.GetTotalCommits(), data.GetTotalCommits() / data.GetActiveDays().Count,
-                data.GetTotalCommits() / data.GetCommitDeltaDays());
+                data.TotalCommits, data.TotalCommits / data.GetActiveDays().Count,
+                data.TotalCommits / data.GetCommitDeltaDays());
             f.Write($"<dt>Authors</dt><dd>{data.TotalAuthors}</dd>");
             f.Write("</dl>");
             f.Write("</body>\n</html>");
@@ -186,7 +198,7 @@ namespace GitStatistics
 
             fp.Close();
             f.Write("</tr>\n<tr><th>%</th>");
-            var totalCommits = data.GetTotalCommits();
+            var totalCommits = data.TotalCommits;
             foreach (var i in Enumerable.Range(0, 24 - 0))
                 if (hourOfDay.ContainsKey(i))
                 {
@@ -271,7 +283,7 @@ namespace GitStatistics
                 commits = 0;
                 if (data.ActivityByMonthOfYear.ContainsKey(mm)) commits = data.ActivityByMonthOfYear[mm];
                 f.Write("<tr><td>{0}</td><td>{1} ({2:F2} %)</td></tr>", mm, commits,
-                    100.0 * commits / data.GetTotalCommits());
+                    100.0 * commits / data.TotalCommits);
                 fp.Write("{0} {1}\n", mm, commits);
             }
 
@@ -294,7 +306,7 @@ namespace GitStatistics
             f.Write("<div class=\"vtable\"><table><tr><th>Year</th><th>Commits (% of all)</th></tr>");
             foreach (var yy in data.CommitsByYear.Keys.OrderBy(p3 => p3).Reverse().ToList())
                 f.Write("<tr><td>{0}</td><td>{1} ({2:F2}%)</td></tr>", yy, data.CommitsByYear[yy],
-                    100.0 * data.CommitsByYear[yy] / data.GetTotalCommits());
+                    100.0 * data.CommitsByYear[yy] / data.TotalCommits);
             f.Write("</table></div>");
             f.Write($"<img src=\"commits_by_year.{ImageType}\" alt=\"Commits by Year\" />");
             fg = new StreamWriter(path + "\\commits_by_year.dat");
@@ -412,9 +424,9 @@ namespace GitStatistics
             f.Write("<h1>Files</h1>");
             PrintNav(f);
             f.Write("<dl>\n");
-            f.Write($"<dt>Total files</dt><dd>{data.GetTotalFiles()}</dd>");
+            f.Write($"<dt>Total files</dt><dd>{data.TotalFiles}</dd>");
             f.Write($"<dt>Total lines</dt><dd>{data.TotalLines}</dd>");
-            f.Write("<dt>Average file size</dt><dd>{0} bytes</dd>", 100.0 * data.TotalLines / data.GetTotalFiles());
+            f.Write("<dt>Average file size</dt><dd>{0} bytes</dd>", 100.0 * data.TotalLines / data.TotalFiles);
             f.Write("</dl>\n");
             // Files :: File count by date
             f.Write(html_header(2, "File count by date"));
@@ -438,7 +450,7 @@ namespace GitStatistics
                 var files = data.Extensions[ext].Files;
                 var lines = data.Extensions[ext].Lines;
                 f.Write("<tr><td>{0}</td><td>{1} ({2}%)</td><td>{3} ({4:F2}%)</td><td>{5}</td></tr>", ext, files,
-                    100.0 * files / data.GetTotalFiles(), lines,
+                    100.0 * files / data.TotalFiles, lines,
                     100.0 * lines / data.TotalLines, lines / files);
             }
 
@@ -471,7 +483,7 @@ namespace GitStatistics
             f.Write("<dl>");
             f.Write("<dt>Total tags</dt><dd>{0}</dd>", data.Tags.Count);
             if (data.Tags.Count > 0)
-                f.Write("<dt>Average commits per tag</dt><dd>{0}</dd>", 1.0 * data.GetTotalCommits() / data.Tags.Count);
+                f.Write("<dt>Average commits per tag</dt><dd>{0}</dd>", 1.0 * data.TotalCommits / data.Tags.Count);
             f.Write("</dl>");
             f.Write("<table class=\"tags\">");
             f.Write("<tr><th>Name</th><th>Date</th><th>Commits</th><th>Authors</th></tr>");

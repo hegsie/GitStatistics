@@ -2,7 +2,7 @@
   "profiles": {
     "GitStatistics": {
       "commandName": "Project",
-      "commandLineArgs": "-r C:\\src\\git\\service-manager-cli -o C:\\src\\git\\output\\service-manager-cli"
+      "commandLineArgs": "-r C:\\temp\\RM\\20210308-23.27.54\\fundamentals-core -o C:\\src\\git\\output\\angara-web1"
     }
   }
 }

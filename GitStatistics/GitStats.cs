@@ -11,9 +11,9 @@ namespace GitStatistics
     {
         public static bool OnLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
-        public static DateTime ExecTimeInternal;
+        public static TimeSpan ExecTimeInternal;
 
-        public static DateTime ExecTimeExternal;
+        public static TimeSpan ExecTimeExternal;
 
         public static DateTime TimeStart = DateTime.Now;
 
@@ -136,9 +136,10 @@ namespace GitStatistics
                     var report = new HtmlReportCreator(o);
                     report.Create(data, outputPath);
                     var timeEnd = DateTime.Now;
-                    var execTimeInternal = timeEnd - TimeStart;
+                    ExecTimeInternal += timeEnd - TimeStart;
+                    
                     Console.WriteLine(
-                        $"Execution time {execTimeInternal} secs, {ExecTimeExternal} secs ({0 /*100.0 *  ExecTimeExternal / exectimeInternal*/} %%) in external commands)");
+                        $"Execution time {ExecTimeInternal.Seconds} secs, {ExecTimeExternal.Seconds} secs ({(100.0 * ExecTimeExternal / ExecTimeInternal):F2} %) in external commands)");
                 });
         }
     }
