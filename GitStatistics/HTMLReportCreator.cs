@@ -70,10 +70,6 @@ namespace GitStatistics
 
         public void Create(GitDataCollector data, string path)
         {
-            object next;
-            string[] authors;
-            object r;
-            int commits;
             Data = data;
             Path = path;
 
@@ -99,6 +95,28 @@ namespace GitStatistics
                 }
             }
 
+            WriteGeneralTab(data, path);
+            //##
+            // Activity
+            var totalCommits = WriteActivityTab(data, path);
+            //##
+            // Authors
+            WriteAuthorsTab(data, path, totalCommits);
+            //##
+            // Files
+            WriteFilesTab(data, path);
+            //##
+            // Lines
+            WriteLinesTab(data, path);
+            //##
+            // tags.html
+            WriteTagsTab(data, path);
+
+            CreateGraphs(path);
+        }
+
+        private void WriteGeneralTab(GitDataCollector data, string path)
+        {
             var f = new StreamWriter(path + "\\index.html");
             var format = "yyyy-MM-dd H:mm:ss";
             PrintHeader(f);
@@ -112,7 +130,8 @@ namespace GitStatistics
             f.Write(
                 "<dt>Generator</dt><dd><a href=\"https://github.com/hegsie/GitStatistics\">GitStatistics</a> (version {0})</dd>",
                 version);
-            f.Write($"<dt>Report Period</dt><dd>{data.FirstCommitStamp.ToString(format)} to {data.LastCommitStamp.ToString(format)}</dd>");
+            f.Write(
+                $"<dt>Report Period</dt><dd>{data.FirstCommitStamp.ToString(format)} to {data.LastCommitStamp.ToString(format)}</dd>");
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
                 data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
             f.Write($"<dt>Total Files</dt><dd>{data.TotalFiles}</dd>");
@@ -125,14 +144,16 @@ namespace GitStatistics
             f.Write("</dl>");
             f.Write("</body>\n</html>");
             f.Close();
-            //##
-            // Activity
-            f = new StreamWriter(path + "\\activity.html");
+        }
+
+        private int WriteActivityTab(GitDataCollector data, string path)
+        {
+            object r;
+            int commits;
+            var f = new StreamWriter(path + "\\activity.html");
             PrintHeader(f);
             f.Write("<h1>Activity</h1>");
             PrintNav(f);
-            //f.Write('<h2>Last 30 days</h2>')
-            //f.Write('<h2>Last 12 months</h2>')
             // Weekly activity
             const int weeks = 32;
             f.Write(html_header(2, "Weekly activity"));
@@ -159,7 +180,7 @@ namespace GitStatistics
             foreach (var i in Enumerable.Range(0, weeks - 0))
             {
                 commits = 0;
-                if (data.ActivityByYearWeek.ContainsKey(weeksList[i])) 
+                if (data.ActivityByYearWeek.ContainsKey(weeksList[i]))
                     commits = data.ActivityByYearWeek[weeksList[i]];
 
                 decimal percentage = 0;
@@ -328,9 +349,15 @@ namespace GitStatistics
             f.Write("</tr></table>");
             f.Write("</body></html>");
             f.Close();
-            //##
-            // Authors
-            f = new StreamWriter(path + "\\authors.html");
+            return totalCommits;
+        }
+
+        private void WriteAuthorsTab(GitDataCollector data, string path, int totalCommits)
+        {
+            object next;
+            string[] authors;
+            int commits;
+            var f = new StreamWriter(path + "\\authors.html");
             PrintHeader(f);
             f.Write("<h1>Authors</h1>");
             PrintNav(f);
@@ -365,8 +392,8 @@ namespace GitStatistics
             var authMonthRev = data.AuthorOfMonth.Keys.OrderBy(p6 => p6).Reverse().ToList();
             foreach (var yymm in authMonthRev)
             {
-                var authordict = data.AuthorOfMonth[yymm];
-                authors = authordict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
+                var authorDict = data.AuthorOfMonth[yymm];
+                authors = authorDict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
                 commits = data.AuthorOfMonth[yymm][authors[0]];
                 var top5 = new List<string>(authors.ToList());
                 top5.RemoveAt(0);
@@ -381,8 +408,8 @@ namespace GitStatistics
                 "<table class=\"sortable\" id=\"aoy\"><tr><th>Year</th><th>Author</th><th>Commits (%)</th><th class=\"unsortable\">Next top 5</th></tr>");
             foreach (var yy in data.AuthorOfYear.Keys.OrderBy(p7 => p7).Reverse().ToList())
             {
-                var authordict = data.AuthorOfYear[yy];
-                authors = authordict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
+                var authorDict = data.AuthorOfYear[yy];
+                authors = authorDict.OrderByDescending(pair => pair.Value).Select(a => a.Key).ToArray();
                 commits = data.AuthorOfYear[yy][authors[0]];
                 var top5 = new List<string>(authors.ToList());
                 top5.RemoveAt(0);
@@ -399,7 +426,7 @@ namespace GitStatistics
             domainsByCommits.Reverse();
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Domains</th><th>Total (%)</th></tr>");
-            fp = new StreamWriter(path + "\\domains.dat");
+            var fp = new StreamWriter(path + "\\domains.dat");
             var n = 0;
             foreach (var domain in domainsByCommits)
             {
@@ -417,9 +444,11 @@ namespace GitStatistics
             fp.Close();
             f.Write("</body></html>");
             f.Close();
-            //##
-            // Files
-            f = new StreamWriter(path + "\\files.html");
+        }
+
+        private void WriteFilesTab(GitDataCollector data, string path)
+        {
+            var f = new StreamWriter(path + "\\files.html");
             PrintHeader(f);
             f.Write("<h1>Files</h1>");
             PrintNav(f);
@@ -435,13 +464,13 @@ namespace GitStatistics
             foreach (var stamp in data.FilesByStamp.Keys.OrderBy(p8 => p8).ToList())
                 filesByDate.Add(
                     $"{stamp:yyyy-MM-dd} {data.FilesByStamp[stamp]}");
-            fg = new StreamWriter(path + "\\files_by_date.dat");
-            foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList()) 
+            var fg = new StreamWriter(path + "\\files_by_date.dat");
+            foreach (var line in filesByDate.ToList().OrderBy(p9 => p9).ToList())
                 fg.Write($"{line}\n");
-            
+
             fg.Close();
             f.Write($"<img src=\"files_by_date.{ImageType}\" alt=\"Files by Date\" />");
-            
+
             f.Write(html_header(2, "Extensions"));
             f.Write(
                 "<table class=\"sortable\" id=\"ext\"><tr><th>Extension</th><th>Files (%)</th><th>Lines (%)</th><th>Lines/file</th></tr>");
@@ -457,9 +486,11 @@ namespace GitStatistics
             f.Write("</table>");
             f.Write("</body></html>");
             f.Close();
-            //##
-            // Lines
-            f = new StreamWriter(path + "\\lines.html");
+        }
+
+        private void WriteLinesTab(GitDataCollector data, string path)
+        {
+            var f = new StreamWriter(path + "\\lines.html");
             PrintHeader(f);
             f.Write("<h1>Lines</h1>");
             PrintNav(f);
@@ -468,15 +499,18 @@ namespace GitStatistics
             f.Write("</dl>\n");
             f.Write(html_header(2, "Lines of Code"));
             f.Write($"<img src=\"lines_of_code.{ImageType}\" />");
-            fg = new StreamWriter(path + "\\lines_of_code.dat");
+            var fg = new StreamWriter(path + "\\lines_of_code.dat");
             foreach (var stamp in data.ChangesByDate.Keys.OrderBy(p11 => p11).ToList())
-                fg.Write($"{(int)(stamp.Subtract(new DateTime(1970, 1, 1))).TotalSeconds} {data.ChangesByDate[stamp].TotalLines}\n");
+                fg.Write(
+                    $"{(int) (stamp.Subtract(new DateTime(1970, 1, 1))).TotalSeconds} {data.ChangesByDate[stamp].TotalLines}\n");
             fg.Close();
             f.Write("</body></html>");
             f.Close();
-            //##
-            // tags.html
-            f = new StreamWriter(path + "\\tags.html");
+        }
+
+        private void WriteTagsTab(GitDataCollector data, string path)
+        {
+            var f = new StreamWriter(path + "\\tags.html");
             PrintHeader(f);
             f.Write("<h1>Tags</h1>");
             PrintNav(f);
@@ -504,7 +538,6 @@ namespace GitStatistics
             f.Write("</table>");
             f.Write("</body></html>");
             f.Close();
-            CreateGraphs(path);
         }
 
         public void CreateGraphs(string path)
