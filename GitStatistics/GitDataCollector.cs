@@ -526,58 +526,32 @@ namespace GitStatistics
 
         public int GetFilesInCommit(string rev)
         {
-            int res;
-            try
+            if (Cache.FilesInTree.TryGetValue(rev, out var res)) 
+                return res;
+            
+            res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
             {
-                res = Cache["files_in_tree"][rev];
-            }
-            catch
-            {
-                res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
-                {
-                    $"git ls-tree -r --name-only \"{rev}\"",
-                    "wc -l"
-                }).Split("\n")[0]);
+                $"git ls-tree -r --name-only \"{rev}\"",
+                "wc -l"
+            }).Split("\n")[0]);
 
-                if (!Cache.ContainsKey("files_in_tree")) 
-                    Cache["files_in_tree"] = new Dictionary<string, int>();
-
-                Cache["files_in_tree"][rev] = res;
-            }
-
+            Cache.FilesInTree[rev] = res;
+            
             return res;
-        }
-
-        public DateTime GetFirstCommitDate()
-        {
-            return FirstCommitStamp;
-        }
-
-        public DateTime GetLastCommitDate()
-        {
-            return LastCommitStamp;
         }
 
         public int GetLinesInBlob(string sha1)
         {
-            int res;
-            try
-            {
-                res = Cache["lines_in_blob"][sha1];
-            }
-            catch
-            {
-                res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
-                {
-                    $"git cat-file blob {sha1}",
-                    "wc -l"
-                }, PipingLevel.Minimal).Split()[0]);
+            if (Cache.LinesInBlob.TryGetValue(sha1, out var res))
+                return res;
 
-                if (!Cache.ContainsKey("lines_in_blob")) 
-                    Cache["lines_in_blob"] = new Dictionary<string, int>();
+            res = Convert.ToInt32(GitStats.GetPipeOutput(new[]
+            {
+                $"git cat-file blob {sha1}",
+                "wc -l"
+            }, PipingLevel.Minimal).Split()[0]);
 
-                Cache["lines_in_blob"][sha1] = res;
-            }
+            Cache.LinesInBlob[sha1] = res;
 
             return res;
         }

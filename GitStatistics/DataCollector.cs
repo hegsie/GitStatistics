@@ -14,10 +14,10 @@ namespace GitStatistics
         public DataCollector()
         {
             StampCreated = DateTime.Now;
-            Cache = new Dictionary<string, Dictionary<string, int>>();
+            Cache = new Cache();
         }
 
-        public Dictionary<string, Dictionary<string, int>> Cache { get; set; }
+        public Cache Cache { get; set; }
 
         public DateTime StampCreated { get; set; }
 
@@ -46,7 +46,6 @@ namespace GitStatistics
             {
                 using (var gs = new GZipStream(mso, CompressionMode.Compress))
                 {
-                    //msi.CopyTo(gs);
                     CopyTo(msi, gs);
                 }
 
@@ -61,7 +60,6 @@ namespace GitStatistics
             {
                 using (var gs = new GZipStream(msi, CompressionMode.Decompress))
                 {
-                    //gs.CopyTo(mso);
                     CopyTo(gs, mso);
                 }
 
@@ -69,9 +67,6 @@ namespace GitStatistics
             }
         }
 
-
-        //#
-        // Load cacheable Data
         public void LoadCache(string cacheFile)
         {
             if (!File.Exists(cacheFile)) return;
@@ -79,47 +74,25 @@ namespace GitStatistics
             var f = File.ReadAllBytes(cacheFile);
             try
             {
-                Cache = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int>>>(Unzip(f));
+                Cache = JsonConvert.DeserializeObject<Cache>(Unzip(f));
             }
             catch (Exception)
             {
             }
         }
 
-        public DateTime GetStampCreated()
-        {
-            return StampCreated;
-        }
-
-        //#
-        // Save cacheable Data
         public void SaveCache(string cacheFile)
         {
             Console.WriteLine("Saving cache...");
             var f = File.Open(cacheFile, FileMode.OpenOrCreate);
-            //pickle.dump(self.Cache, f)
             var data = Zip(JsonConvert.SerializeObject(Cache));
             f.Write(data);
             f.Close();
         }
 
-        // def getkeyssortedbyvaluekey(d, key):
-        //    return map(lambda el : el[1], sorted(map(lambda el : (d[el][key], el), d.keys())))
-        public static IEnumerable<T1> GetKeysSortedByValueKey<T1, T2, T3>(Dictionary<T1,Dictionary<T2,T3>> dict, T2 key)
-        {
-            return dict.Keys.Select(outerKey => (dict[outerKey][key], outerKey)).OrderBy(p1 => p1).Select(tuple => tuple.outerKey);
-        }
-
         public static IEnumerable<T1> GetKeysSortedByAuthorKey<T1>(Dictionary<T1, Author> dict)
         {
             return dict.Keys.Select(el => (dict[el].Commits, el)).OrderBy(p1 => p1).Select(tuple => tuple.el);
-        }
-
-        // def getkeyssortedbyvalues(dict):
-        //    return map(lambda el : el[1], sorted(map(lambda el : (el[1], el[0]), dict.items())))
-        public static IEnumerable<T1> GetKeysSortedByValues<T1, T2, T3>(Dictionary<T1, Dictionary<T2, T3>> dict)
-        {
-            return dict.Select(el => (el.Value, el.Key)).OrderBy(p1 => p1).Select(tuple => tuple.Key);
         }
     }
 }

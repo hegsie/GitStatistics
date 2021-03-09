@@ -1,9 +1,17 @@
-﻿namespace GitStatistics
+﻿using System.Collections.Generic;
+
+namespace GitStatistics
 {
     public class Cache
     {
-        public string FilesInTree { get; set; }
+        public Cache()
+        {
+            FilesInTree = new Dictionary<string, int>();
+            LinesInBlob = new Dictionary<string, int>();
+        }
 
-        public int LinesInBlob { get; set; }
+        public Dictionary<string, int> FilesInTree { get; set; }
+
+        public Dictionary<string, int> LinesInBlob { get; set; }
     }
 }

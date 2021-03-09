@@ -106,13 +106,13 @@ namespace GitStatistics
             PrintNav(f);
             f.Write("<dl>");
             f.Write($"<dt>Project name</dt><dd>{data.ProjectName}</dd>");
-            var runTime = DateTime.Now - data.GetStampCreated();
+            var runTime = DateTime.Now - data.FirstCommitStamp;
             f.Write(
                 $"<dt>Generated</dt><dd>{DateTime.Now.ToString(format)} (in {runTime.Seconds:f2} seconds)</dd>");
             f.Write(
                 "<dt>Generator</dt><dd><a href=\"https://github.com/hegsie/GitStatistics\">GitStatistics</a> (version {0})</dd>",
                 version);
-            f.Write($"<dt>Report Period</dt><dd>{data.GetFirstCommitDate().ToString(format)} to {data.GetLastCommitDate().ToString(format)}</dd>");
+            f.Write($"<dt>Report Period</dt><dd>{data.FirstCommitStamp.ToString(format)} to {data.LastCommitStamp.ToString(format)}</dd>");
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
                 data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
             f.Write($"<dt>Total Files</dt><dd>{data.TotalFiles}</dd>");
@@ -343,7 +343,7 @@ namespace GitStatistics
             {
                 var info = data.GetAuthorInfo(author);
                 f.Write(
-                    "<tr><td>{0}</td><td>{1} ({2}%)</td><td>{3}</td><td>{4}</td><td>{5:yyyy-MM-dd}</td><td>{6:yyyy-MM-dd}</td><td>{7}</td><td>{8}</td><td>{9}</td></tr>",
+                    "<tr><td>{0}</td><td>{1} ({2:F2}%)</td><td>{3}</td><td>{4}</td><td>{5:yyyy-MM-dd}</td><td>{6:yyyy-MM-dd}</td><td>{7}</td><td>{8}</td><td>{9}</td></tr>",
                     author, info.Commits, info.CommitsFrac, info.LinesAdded, info.LinesRemoved,
                     info.DateFirst, info.DateLast, info.TimeDelta, info.ActiveDays,
                     info.PlaceByCommits);

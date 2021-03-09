@@ -22,19 +22,13 @@ namespace GitStatistics
         public static string GetPipeOutput(string[] cmds, PipingLevel pipeLevel = PipingLevel.Full)
         {
             var start = DateTime.Now;
-            if (pipeLevel != PipingLevel.Quiet && OnLinux)
-            {
-                //} && os.isatty(1)) {
-                Console.Write(">> " + string.Join(" | ", cmds));
-                Console.Out.Flush();
-            }
 
-            bool is2ndCmd = false;
+            var isSecondCmd = false;
             // Start the child process.
             var sb = new StringBuilder();
             foreach (var cmd in cmds)
             {
-                if (sb.Length > 0 || is2ndCmd)
+                if (sb.Length > 0 || isSecondCmd)
                 {
                     var p0 = new Process
                     {
@@ -80,7 +74,7 @@ namespace GitStatistics
                     p0.WaitForExit();
                 }
 
-                is2ndCmd = true;
+                isSecondCmd = true;
             }
 
             var end = DateTime.Now;
@@ -91,9 +85,6 @@ namespace GitStatistics
                     break;
                 case PipingLevel.Full:
                 {
-                    if (OnLinux)
-                        // && os.isatty(1)) {
-                        Console.Write("\r");
                     Console.WriteLine("[{0}] >> {1}", end - start, string.Join(" | ", cmds));
                     break;
                 }
