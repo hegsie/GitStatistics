@@ -2,7 +2,7 @@
   "profiles": {
     "GitStatistics": {
       "commandName": "Project",
-      "commandLineArgs": "-r C:\\temp\\RM\\20210308-23.27.54\\fundamentals-core -o C:\\src\\git\\output\\angara-web1"
+      "commandLineArgs": "-r C:\\Temp\\RM\\20210309-14.51.18\\TacDev -o C:\\Temp\\RM\\20210309-14.51.18\\output\\TacDev"
     }
   }
 }

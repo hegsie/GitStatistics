@@ -29,10 +29,12 @@ namespace GitStatistics
                 Console.Out.Flush();
             }
 
+            bool is2ndCmd = false;
             // Start the child process.
             var sb = new StringBuilder();
             foreach (var cmd in cmds)
-                if (sb.Length > 0)
+            {
+                if (sb.Length > 0 || is2ndCmd)
                 {
                     var p0 = new Process
                     {
@@ -77,6 +79,9 @@ namespace GitStatistics
                     sb.Append(p0.StandardOutput.ReadToEnd());
                     p0.WaitForExit();
                 }
+
+                is2ndCmd = true;
+            }
 
             var end = DateTime.Now;
             if (!quiet)
