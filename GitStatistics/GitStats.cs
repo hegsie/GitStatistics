@@ -19,10 +19,10 @@ namespace GitStatistics
 
         public static int Version;
 
-        public static string GetPipeOutput(string[] cmds, bool quiet = false)
+        public static string GetPipeOutput(string[] cmds, PipingLevel pipeLevel = PipingLevel.Full)
         {
             var start = DateTime.Now;
-            if (!quiet && OnLinux)
+            if (pipeLevel != PipingLevel.Quiet && OnLinux)
             {
                 //} && os.isatty(1)) {
                 Console.Write(">> " + string.Join(" | ", cmds));
@@ -84,12 +84,19 @@ namespace GitStatistics
             }
 
             var end = DateTime.Now;
-            if (!quiet)
+            switch (pipeLevel)
             {
-                if (OnLinux)
-                    // && os.isatty(1)) {
-                    Console.Write("\r");
-                Console.WriteLine("[{0}] >> {1}", end - start, string.Join(" | ", cmds));
+                case PipingLevel.Minimal:
+                    Console.Write(".");
+                    break;
+                case PipingLevel.Full:
+                {
+                    if (OnLinux)
+                        // && os.isatty(1)) {
+                        Console.Write("\r");
+                    Console.WriteLine("[{0}] >> {1}", end - start, string.Join(" | ", cmds));
+                    break;
+                }
             }
 
             ExecTimeExternal += end - start;

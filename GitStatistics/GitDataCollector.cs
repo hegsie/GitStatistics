@@ -538,7 +538,10 @@ namespace GitStatistics
                     $"git ls-tree -r --name-only \"{rev}\"",
                     "wc -l"
                 }).Split("\n")[0]);
-                if (!Cache.ContainsKey("files_in_tree")) Cache["files_in_tree"] = new Dictionary<string, int>();
+
+                if (!Cache.ContainsKey("files_in_tree")) 
+                    Cache["files_in_tree"] = new Dictionary<string, int>();
+
                 Cache["files_in_tree"][rev] = res;
             }
 
@@ -568,8 +571,11 @@ namespace GitStatistics
                 {
                     $"git cat-file blob {sha1}",
                     "wc -l"
-                }).Split()[0]);
-                if (!Cache.ContainsKey("lines_in_blob")) Cache["lines_in_blob"] = new Dictionary<string, int>();
+                }, PipingLevel.Minimal).Split()[0]);
+
+                if (!Cache.ContainsKey("lines_in_blob")) 
+                    Cache["lines_in_blob"] = new Dictionary<string, int>();
+
                 Cache["lines_in_blob"][sha1] = res;
             }
 
