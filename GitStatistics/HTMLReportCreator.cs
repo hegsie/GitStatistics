@@ -133,12 +133,12 @@ namespace GitStatistics
             f.Write(
                 $"<dt>Report Period</dt><dd>{data.FirstCommitStamp.ToString(format)} to {data.LastCommitStamp.ToString(format)}</dd>");
             f.Write("<dt>Age</dt><dd>{0} days, {1} active days ({2:f2}%)</dd>", data.GetCommitDeltaDays(),
-                data.GetActiveDays().Count, 100.0 * data.GetActiveDays().Count / data.GetCommitDeltaDays());
+                data.ActiveDays.Count, 100.0 * data.ActiveDays.Count / data.GetCommitDeltaDays());
             f.Write($"<dt>Total Files</dt><dd>{data.TotalFiles}</dd>");
             f.Write("<dt>Total Lines of Code</dt><dd>{0} ({1} added, {2} removed)</dd>", data.TotalLines,
                 data.TotalLinesAdded, data.TotalLinesRemoved);
             f.Write("<dt>Total Commits</dt><dd>{0} (average {1:F1} commits per active day, {2:F1} per all days)</dd>",
-                data.TotalCommits, data.TotalCommits / data.GetActiveDays().Count,
+                data.TotalCommits, data.TotalCommits / data.ActiveDays.Count,
                 data.TotalCommits / data.GetCommitDeltaDays());
             f.Write($"<dt>Authors</dt><dd>{data.TotalAuthors}</dd>");
             f.Write("</dl>");
@@ -199,7 +199,7 @@ namespace GitStatistics
             f.Write("</tr></table>");
             // Hour of Day
             f.Write(html_header(2, "Hour of Day"));
-            var hourOfDay = data.GetActivityByHourOfDay();
+            var hourOfDay = data.ActivityByHourOfDay;
             f.Write("<table><tr><th>Hour</th>");
             foreach (var i in Enumerable.Range(0, 24 - 0)) f.Write("<th>{0}</th>", i);
             f.Write("</tr>\n<tr><th>Commits</th>");
@@ -240,7 +240,7 @@ namespace GitStatistics
             fg.Close();
             // Day of Week
             f.Write(html_header(2, "Day of Week"));
-            var dayOfWeek = data.GetActivityByDayOfWeek();
+            var dayOfWeek = data.ActivityByDayOfWeek;
             f.Write("<div class=\"vtable\"><table>");
             f.Write("<tr><th>Day</th><th>Total (%)</th></tr>");
             fp = new StreamWriter(path + "\\day_of_week.dat");

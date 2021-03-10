@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using CommandLine;
@@ -19,63 +20,32 @@ namespace GitStatistics
 
         public static int Version;
 
-        public static string GetPipeOutput(string[] cmds, PipingLevel pipeLevel = PipingLevel.Full)
+        public static string GetPipeOutput(string[] cmds, PipingLevel pipeLevel = PipingLevel.Full, bool triggerAltWrite = false)
         {
             var start = DateTime.Now;
 
-            var isSecondCmd = false;
+            var command = string.Join(" | ", cmds);
+
             // Start the child process.
             var sb = new StringBuilder();
-            foreach (var cmd in cmds)
+
+            var p0 = new Process
             {
-                if (sb.Length > 0 || isSecondCmd)
+                StartInfo =
                 {
-                    var p0 = new Process
-                    {
-                        StartInfo =
-                        {
-                            CreateNoWindow = true,
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardInput = true,
-                            FileName = "cmd.exe",
-                            Arguments = "/c " + cmd
-                        }
-                    };
-
-                    p0.Start();
-
-                    var inputStream = p0.StandardInput;
-
-                    inputStream.Write(sb.ToString());
-                    inputStream.Close();
-                    sb.Clear();
-
-                    sb.Append(p0.StandardOutput.ReadToEnd());
-                    p0.WaitForExit();
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    FileName = "cmd.exe",
+                    Arguments = "/c " + command
                 }
-                else
-                {
-                    var p0 = new Process
-                    {
-                        StartInfo =
-                        {
-                            CreateNoWindow = true,
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            FileName = "cmd.exe",
-                            Arguments = "/c " + cmd
-                        }
-                    };
+            };
 
-                    p0.Start();
+            p0.Start();
 
-                    sb.Append(p0.StandardOutput.ReadToEnd());
-                    p0.WaitForExit();
-                }
-
-                isSecondCmd = true;
-            }
+            sb.Append(p0.StandardOutput.ReadToEnd());
+            p0.WaitForExit();
+  
 
             var end = DateTime.Now;
             switch (pipeLevel)
@@ -85,7 +55,7 @@ namespace GitStatistics
                     break;
                 case PipingLevel.Full:
                 {
-                    Console.WriteLine("[{0}] >> {1}", end - start, string.Join(" | ", cmds));
+                    Console.WriteLine("[{0}] >> {1}", end - start, command);
                     break;
                 }
             }

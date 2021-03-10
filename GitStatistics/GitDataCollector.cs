@@ -153,27 +153,28 @@ namespace GitStatistics
                 tag = tag.Replace("refs/tags/", "");
                 output = GitStats.GetPipeOutput(new[]
                 {
-                    string.Format("git log \"%s\" --pretty=format:\"%%at %%an\" -n 1", hash)
+                    $"git log \"{hash}\" --pretty=format:\"%at %an\" -n 1"
                 });
-                if (output.Length > 0)
-                {
-                    parts = output.Split(" ");
-                    DateTime stamp;
-                    try
-                    {
-                        stamp = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(parts[0])).DateTime;
-                    }
-                    catch (FormatException)
-                    {
-                        stamp = DateTime.MinValue;
-                    }
+                
+                if (output.Length <= 0) 
+                    continue;
 
-                    Tags[tag] = new Tag
-                    {
-                        Stamp = stamp, Hash = hash, Date = stamp,
-                        Commits = 0, Authors = new Dictionary<string, int>()
-                    };
+                parts = output.Split(" ");
+                DateTime stamp;
+                try
+                {
+                    stamp = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt32(parts[0])).DateTime;
                 }
+                catch (FormatException)
+                {
+                    stamp = DateTime.MinValue;
+                }
+
+                Tags[tag] = new Tag
+                {
+                    Stamp = stamp, Hash = hash, Date = stamp,
+                    Commits = 0, Authors = new Dictionary<string, int>()
+                };
             }
 
             // Collect info on tags, starting from latest
@@ -188,9 +189,9 @@ namespace GitStatistics
                 var prev = tag;
                 foreach (var line in output.Split("\n"))
                 {
-                    parts = Regex.Split(line, "\\s+", RegexOptions.None);
-                    var commits = Convert.ToInt32(parts[1]);
-                    var author = parts[2];
+                    parts = Regex.Split(line, "\t", RegexOptions.None);
+                    var commits = Convert.ToInt32(parts[0].Trim());
+                    var author = parts[1];
                     Tags[tag].Commits += commits;
                     Tags[tag].Authors[author] = commits;
                 }
@@ -205,7 +206,7 @@ namespace GitStatistics
             {
                 "git rev-list --pretty=format:\"%at %ai %an <%aE>\" HEAD",
                 "grep -v ^commit"
-            }).Split("\n").ToList();
+            }, PipingLevel.Full, true).Split("\n").ToList();
             foreach (var line in lines)
             {
                 var parts = Regex.Split(line, "([01-9-:+]+ )").Where(x => !string.IsNullOrEmpty(x)).Select(s => s.Trim())
@@ -240,7 +241,7 @@ namespace GitStatistics
                 if (ActivityByHourOfDay[hour] > ActivityByHourOfDayBusiest)
                     ActivityByHourOfDayBusiest = ActivityByHourOfDay[hour];
                 // day of week
-                var day = (int) date.DayOfWeek;
+                var day = (int) date.DayOfWeek -1;
                 ActivityByDayOfWeek[day] = ActivityByDayOfWeek[day] + 1;
                 // domain stats
                 if (!Domains.ContainsKey(domain)) Domains[domain] = new Domain();
@@ -353,7 +354,8 @@ namespace GitStatistics
                 "git ls-tree -r -z HEAD"
             }).Split("\0").ToList().Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
             ;
-            TotalFiles = lines.Count();
+            TotalFiles = lines.Length;
+            Console.WriteLine($"Processing {TotalFiles} files in repo");
             foreach (var line in lines)
             {
                 if (line.Length == 0) continue;
@@ -484,21 +486,6 @@ namespace GitStatistics
                 a.DateLast = dateLast;
                 a.TimeDelta = delta;
             }
-        }
-
-        public List<DateTime> GetActiveDays()
-        {
-            return ActiveDays;
-        }
-
-        public Dictionary<int, int> GetActivityByDayOfWeek()
-        {
-            return ActivityByDayOfWeek;
-        }
-
-        public Dictionary<int, decimal> GetActivityByHourOfDay()
-        {
-            return ActivityByHourOfDay;
         }
 
         public Author GetAuthorInfo(string author)
