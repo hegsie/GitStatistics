@@ -204,7 +204,7 @@ namespace GitStatistics
         {
             var lines = GitStats.GetPipeOutput(new[]
             {
-                "git rev-list --pretty=format:\"%at %ai %an <%aE>\" HEAD",
+                "git rev-list --remotes --pretty=format:\"%at %ai %an <%aE>\" HEAD",
                 "grep -v ^commit"
             }, PipingLevel.Full, true).Split("\n").ToList();
             foreach (var line in lines)
@@ -318,7 +318,7 @@ namespace GitStatistics
             FilesByStamp = new DictionaryWithDefault<DateTime, int>();
             var revLines = GitStats.GetPipeOutput(new[]
             {
-                "git rev-list --pretty=format:\"%at %T\" HEAD",
+                "git rev-list --remotes --pretty=format:\"%at %T\" HEAD",
                 "grep -v ^commit"
             }).Trim().Split("\n");
             foreach (var revLine in revLines)
