@@ -89,7 +89,7 @@ namespace GitStatistics
 
                     if (!Directory.Exists(outputPath))
                     {
-                        Console.WriteLine("FATAL: Output Path is not a directory or does not exist");
+                        Console.WriteLine($"FATAL: Output Path {outputPath} is not a directory or does not exist");
                         Environment.Exit(1);
                     }
 
