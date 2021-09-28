@@ -15,7 +15,7 @@ namespace GitStatistics
         [Option('r', "RepositoryPath", Required = true, HelpText = "Set repository Path.")]
         public string RepositoryPath { get; set; }
 
-        [Option('o', "RepositoryPath", Required = true, HelpText = "Set output Path.")]
+        [Option('o', "OutputPath", Required = true, HelpText = "Set output Path.")]
         public string OutputPath { get; set; }
 
         [Option('d', "MaxDomains", Required = false, HelpText = "Set the maximum number of domains to collect.")]
